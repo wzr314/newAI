@@ -38,7 +38,6 @@ links_on_page(A, Links):-
 %%
 
 find_identity_o(A):-
-  writeln("Finding now..."),
   findall(Actor, actor(Actor), Actors),
   find_actor_identity_o(A, Actors).
 

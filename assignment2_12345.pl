@@ -1,10 +1,18 @@
 candidate_number(12345).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % How to make sure pass all part1 scince no tests are given
-% something could be improved:
-% 1. not run out of energy.
-%%%%%%%%%%%%%%%%%%%%%%
+% A* agenda-based search for part1
+% Breadth fisrt search for part3 (shortest path fisrt anwser)
+% Always checking energy before moving
 
+
+% Something could be improved:
+% make sure get all marks for part1
+% part2 seems fine
+% part3 needs to be checked as well
+% part4 if we have time
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
@@ -22,16 +30,16 @@ solve_task(Task,Cost) :-
 
 
 %%%%%%%%%%%%%%%%%%
-%% solove for part3
+%% for part3
 
 % checking, set the lowest energy here
 check_energy(Agent):-
-  write("CHECKING ENERGY"),nl,
+  write("Checking Energy Before We Make A Move"),nl,
   query_world(agent_current_energy, [Agent, Energy]),
   write("ENERGY = "),
   write(Energy),nl,
   ( Energy > 50 -> true
-  ; otherwise -> solve_task_o(find(c(X)),Cost)
+  ; otherwise -> solve_task_o(find(c(_)), _)
   ).
 
 
@@ -39,29 +47,24 @@ check_energy(Agent):-
 solve_task_o(find_next_oracle(o(X)),Cost):-
   my_agent(Agent),
   check_energy(Agent),
-  write("GOING TO NEXT ORACLE"),nl,
+  write("Energy is fine, I'm Going To Next Oracle"),nl,
   query_world( agent_current_position, [Agent,P] ),
-  (part_module(4) ->repeat, solve_task_breadth(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
-  ; otherwise -> solve_task_breadth(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
-  ),
+  solve_task_breadth(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  ,
   reverse(R,[_Init|Path]),
-  ( part_module(4) -> run_part_4(find_next_oracle(o(X)), [Agent, Path])
-  ; query_world( agent_do_moves, [Agent,Path] )
-  ).
+  query_world( agent_do_moves, [Agent,Path] )
+  .
 
-% if you run out of energy
+% in case if you run out of energy
 solve_task_o(find(c(X)),Cost):-
   my_agent(Agent),
-  write("GOING TO CHARGING STATION"),nl,
+  write("Sorry, But I Need to Go To Charging Fisrt"),nl,
   query_world( agent_current_position, [Agent,P] ),
-  (part_module(4) -> repeat, solve_task_breadth(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
-  ; otherwise -> solve_task_breadth(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
-  ),
+  solve_task_breadth(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  ,
   reverse(R,[_Init|Path]),
-  ( part_module(4) -> run_part_4(find(c(X)), [Agent, Path])
-  ; otherwise -> query_world( agent_do_moves, [Agent,Path] )
-  ),
-  write("TOPPING UP"),nl,
+  query_world( agent_do_moves, [Agent,Path] )
+  ,
   query_world( agent_topup_energy, [Agent, c(X)]),
   query_world(agent_current_energy, [Agent, Energy]),
   write("ENERGY = "), write(Energy),nl.
