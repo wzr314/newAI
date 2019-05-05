@@ -149,22 +149,23 @@ actor('Scarlett Johansson').
 actor('Steve Buscemi').
 actor('Tom Hanks').
 actor('William H. Macy').
+%actor('Gary Goodman').
 
 link('Barack Obama').
 link('Barton Fink').
 link('Coen brothers').
-%link('Golden Globe Award for Best Supporting Actor - Motion Picture').
+link('Golden Globe Award for Best Supporting Actor - Motion Picture').
 link('Hollywood Walk of Fame').
 link('Inside the Actors Studio').
 link('Manhattan').
 link('Miller\'s Crossing').
-%link('New York City').
+link('New York City').
 link('O Brother, Where Art Thou?').
 link('Rotten Tomatoes').
 link('Saturday Night Live').
 link('Screen Actors Guild Award').
 link('The Big Lebowski').
-%link('The New York Times').
+link('The New York Times').
 link('Tony Award').
 link('Los Angeles').
 link('Angelina Jolie').

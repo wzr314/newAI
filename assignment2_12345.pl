@@ -1,7 +1,8 @@
 candidate_number(12345).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % How to make sure pass all part1 scince no tests are given
-%
+% something could be improved:
+% 1. not run out of energy.
 %%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -12,11 +13,89 @@ solve_task(Task,Cost) :-
   (Task = go(_) -> nb_setval(opt, 1);
    otherwise -> nb_setval(opt, 0)),
   my_agent(Agent),
+  check_energy(Agent),
   query_world( agent_current_position, [Agent,P] ),
   solve_task_Astar(Task, [[c(0,0,P),P]],R,Cost,_NewPos,[]),!,
   nb_getval(opt, Opt),
   (Opt = 1 -> reverse(R,[_Init|Path]),query_world( agent_do_moves, [Agent,Path] );
   otherwise -> R = [Last|_],solve_task(go(Last),_)).
+
+
+%%%%%%%%%%%%%%%%%%
+%% solove for part3
+
+% checking, set the lowest energy here
+check_energy(Agent):-
+  write("CHECKING ENERGY"),nl,
+  query_world(agent_current_energy, [Agent, Energy]),
+  write("ENERGY = "),
+  write(Energy),nl,
+  ( Energy > 50 -> true
+  ; otherwise -> solve_task_o(find(c(X)),Cost)
+  ).
+
+
+% find next oracle
+solve_task_o(find_next_oracle(o(X)),Cost):-
+  my_agent(Agent),
+  check_energy(Agent),
+  write("GOING TO NEXT ORACLE"),nl,
+  query_world( agent_current_position, [Agent,P] ),
+  (part_module(4) ->repeat, solve_task_breadth(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  ; otherwise -> solve_task_breadth(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  ),
+  reverse(R,[_Init|Path]),
+  ( part_module(4) -> run_part_4(find_next_oracle(o(X)), [Agent, Path])
+  ; query_world( agent_do_moves, [Agent,Path] )
+  ).
+
+% if you run out of energy
+solve_task_o(find(c(X)),Cost):-
+  my_agent(Agent),
+  write("GOING TO CHARGING STATION"),nl,
+  query_world( agent_current_position, [Agent,P] ),
+  (part_module(4) -> repeat, solve_task_breadth(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  ; otherwise -> solve_task_breadth(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  ),
+  reverse(R,[_Init|Path]),
+  ( part_module(4) -> run_part_4(find(c(X)), [Agent, Path])
+  ; otherwise -> query_world( agent_do_moves, [Agent,Path] )
+  ),
+  write("TOPPING UP"),nl,
+  query_world( agent_topup_energy, [Agent, c(X)]),
+  query_world(agent_current_energy, [Agent, Energy]),
+  write("ENERGY = "), write(Energy),nl.
+
+
+%%%%%%%%% helper functions
+solve_task_breadth(Task, [Current|_], R, Costs, NewPos, _):-
+  Current = [c(_,G,P)|RPath],
+  Costs = [cost(Cost), depth(G)],
+  achieved(Task, [c(G,P)|RPath], R, Cost, NewPos).
+
+solve_task_breadth(Task, [Current|Agenda], RR, Cost, NewPos, Visited):-
+  Current = [c(_,G,P)|RPath],
+  (setof(Child, breadth_child(P, RPath, G, Child, Visited), Children) -> append(Agenda, Children, NewAgenda)
+  ; NewAgenda = Agenda
+  ),
+  remove_visited_from_agenda(NewAgenda, Visited, FinalAgenda),
+  solve_task_breadth(Task,FinalAgenda,RR,Cost,NewPos,[P|Visited]).
+
+remove_visited_from_agenda(Agenda, [], Agenda).
+remove_visited_from_agenda(Agenda, [P|Tail], NewAgenda) :-
+    delete(Agenda, [c(_,_,P)|_], NewAgenda),
+    remove_visited_from_agenda(NewAgenda, Tail, _).
+
+
+breadth_child(P, RPath, G, Child, Visited) :-
+  search(P, P1, R, _),
+  \+ memberchk(R, RPath),
+  \+ memberchk(P1, Visited),
+  G1 is G+1,
+  Child = [c(G1, G1, P1), P1|RPath].
+
+
+
 
 %%%%%%%%%% Useful predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% backtracking depth-first search, needs to be changed to agenda-based A*
@@ -78,17 +157,27 @@ search_Astar(P,N,F1,G1,Closelist):-
   otherwise -> H is 0),
   F1 is H + G1.
 
-%%%%%%%%%%%%%
+
+%%%%%%%%%%%%% achieved %%%%%%%%%%
 
 achieved(go(Exit),Current,RPath,Cost,NewPos) :-
   Current = [c(Cost,NewPos)|RPath],
   ( Exit=none -> true
   ; otherwise -> RPath = [Exit|_]
   ).
+
 achieved(find(O),Current,RPath,Cost,NewPos) :-
   Current = [c(Cost,NewPos)|RPath],
   ( O=none    -> true
   ; otherwise -> RPath = [Last|_],map_adjacent(Last,_,O)
+  ).
+
+achieved(find_next_oracle(O), Current, RPath, Cost, NewPos) :-
+  Current = [c(Cost, NewPos)|RPath],
+  my_agent(Agent),
+  ( O=none -> true
+  ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O),
+  \+ query_world(agent_check_oracle, [Agent, O ]), write("ORACLE FOUND, I = "), write(O), nl
   ).
 
 search(F,N,N,1) :-
