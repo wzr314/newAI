@@ -31,7 +31,7 @@ solve_task(Task,Cost) :-
   query_world( agent_current_position, [A,P] ),
   solve_task_Astar(Task, [[c(0, 0, P), P]], R, Cost, _NewPos, []),!,
   nb_getval(flag, Flag),
-  ( Flag = 1 -> reverse( R,[_Init|Path]),
+  ( Flag = 1 -> reverse( R, [_Init | Path]),
     query_world( agent_do_moves, [A,Path] );
     otherwise -> R = [Last|_], solve_task( go(Last),_)
   ).
@@ -51,14 +51,14 @@ solve_task_part4_o( goto_another_oracle( o(X) ), Cost) :-
 
 
 % robustness search for part4
-robustness( Task, [Agent, [] ] ).
-robustness( Task, [A, [H|T] ] ) :-
-  (query_world( check_pos,[H,empty] ) ->
-  query_world(agent_do_moves, [A, [H] ]),
-  robustness( Task, [A, T] );
+robustness( _, [_, [] ] ).
+robustness( Task, [Agent, [H|T] ] ) :-
+  (query_world( check_pos, [H, empty] ) ->
+  query_world(agent_do_moves, [Agent, [H] ]),
+  robustness( Task, [Agent, T] );
   otherwise -> write("World changing fast, I'm finding another path!!"),
   nl,
-  solve_task_part4_o( Task, _ )
+  solve_task_part4_o(Task, _ )
   ).
 
 
@@ -69,7 +69,7 @@ robustness( Task, [A, [H|T] ] ) :-
 energy_status( A ) :-
   query_world( agent_current_energy,[A, E] ),
   % set energy threshold here
-  (E>50->true; otherwise->solve_task_o(find(c(_)),_)). 
+  (E>50->true; otherwise->solve_task_o(find(c(_)), _)). %if lower than 50, go charge first
 
 
 % in case you run out of energy
@@ -110,7 +110,8 @@ solve_bfs( Task,[Current | _],R,CostsBFS,NewPos,_) :-
 solve_bfs(Task,[Current|Rest],RR,Cost,NewPos,Explored):-
   Current=[c(_, G, P) | RPath],
   (setof( Child,findChild( P,RPath,G,Child,Explored ),AllFoundChild) -> append( Rest,AllFoundChild,ModifRest );
-  ModifRest=Rest),
+   ModifRest=Rest
+  ),
   delete_seen( ModifRest,Explored,NewestRest ),
   solve_bfs( Task, NewestRest, RR, Cost, NewPos, [P | Explored]).
 
@@ -126,7 +127,7 @@ findChild(P,RPath,G,Child,Explored) :-
   \+ memberchk(R,RPath),    % check we have not been here already
   \+ memberchk(P1,Explored),
   G1 is G+1,
-  Child=[c(G1,G1,P1),P1 | RPath].
+  Child=[c(G1,G1,P1), P1 | RPath].
 
 
 
@@ -154,11 +155,10 @@ solve_task_Astar(Task,[Current|Agenda],RR,Cost,NewPos,Closest) :-
   % add children to the agenda
   (setof([c(F1,G1,Pos1),Pos1|RPath],
    search_Astar(P,Pos1,F1,G1,Closest), Children)
-  -> merge(Agenda, Children, NewAgenda);
-  NewAgenda = Agenda
+  -> merge(Agenda, Children, NewAgenda);NewAgenda = Agenda
   ),
-  exclude(memberchk(Closest), NewAgenda, FilteredAgenda),
-  solve_task_Astar(Task,FilteredAgenda,RR,Cost,NewPos,[P|Closest]).
+  exclude( memberchk(Closest), NewAgenda, FinalAgenda),
+  solve_task_Astar(Task,FinalAgenda,RR,Cost,NewPos,[P|Closest]).
 
 
 achieved_Astar(go(Exit),Current,RPath,Cost,NewPos) :-
@@ -184,9 +184,9 @@ manhattan_distance(Pos, Goal, Distance):-
 search_Astar(P,N,F1,G1,Closest):-
   map_adjacent(P,N,empty), \+ memberchk(N,Closest),
   nb_getval(flag, Flag),
-  (Flag = 1 -> b_getval( destination, go(Goal)),
-  manhattan_distance(N, Goal, Distance), H is Distance;
-  otherwise -> H is 0
+  ( Flag = 1 -> b_getval( destination, go(Goal)),
+    manhattan_distance( N, Goal, Distance), H is Distance;
+    otherwise -> H is 0
   ),
   F1 is H + G1.
 
@@ -203,7 +203,7 @@ achieved(go(Exit),Current,RPath,Cost,NewPos) :-
 achieved(find(O),Current,RPath,Cost,NewPos) :-
   Current = [c(Cost,NewPos)|RPath],
   ( O=none    -> true
-  ; otherwise -> RPath = [Last|_],map_adjacent(Last,_,O)
+  ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O)
   ).
 
 
@@ -215,7 +215,7 @@ achieved(goto_another_oracle(O),Current,RPath,Cost,NewPos) :-
   ( O=none    -> true
   ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O),
   \+ query_world(agent_check_oracle,[Agent, O] ),
-  write("Visited oracle "),
+  write(" Visited oracle "),
   write(O),
   nl ).
 
