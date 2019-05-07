@@ -21,7 +21,6 @@ solve_task_general(Task,Cost) :-
   otherwise -> solve_task_o(Task,Cost).
 
 
-
 solve_task(Task,Cost) :-
   b_setval(target_pos,Task),
   (Task = go(_) -> nb_setval(opt, 1);
@@ -67,13 +66,11 @@ solve_task_o(find_next_oracle(o(X)),Cost):-
   my_agent(Agent),
   checking(Agent),
   query_world( agent_current_position, [Agent,P] ),
-  (part_module(4) -> repeat, solve_task_bfs(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!;
-  otherwise -> solve_task_bfs(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
-  ),
+  solve_task_bfs(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  ,
   reverse(R,[_Init|Path]),
-  ( part_module(4) -> try_part4(find_next_oracle(o(X)), [Agent, Path]);
-    otherwise -> query_world( agent_do_moves, [Agent,Path] )
-  ).
+  otherwise -> query_world( agent_do_moves, [Agent,Path] )
+  .
 
 
 
@@ -81,13 +78,11 @@ solve_task_o(find_next_oracle(o(X)),Cost):-
 solve_task_engergy(find(c(X)),Cost):-
   my_agent(Agent),
   query_world( agent_current_position, [Agent,P] ),
-  (part_module(4) -> repeat, solve_task_bfs(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!;
-  otherwise -> solve_task_bfs(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
-  ),
+  solve_task_bfs(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  ,
   reverse(R,[_Init|Path]),
-  ( part_module(4) -> try_part4(find(c(X)), [Agent, Path]);
-    otherwise -> query_world( agent_do_moves, [Agent,Path] )
-  ),
+  otherwise -> query_world( agent_do_moves, [Agent,Path] )
+  ,
   write("topup energy now"),nl,
   query_world(agent_topup_energy, [Agent, c(X)]),
   query_world(agent_current_energy, [Agent, Energy]),
