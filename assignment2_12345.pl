@@ -4,7 +4,7 @@ candidate_number(12345).
 % How to make sure pass all part1 scince no tests are given
 % A* agenda-based search for part1
 % Breadth fisrt search for part3 (shortest path fisrt anwser)
-% Always energy_status energy before moving
+% Always checking energy before moving
 
 
 % Something could be improved:
@@ -26,75 +26,82 @@ solve_task(Task,Cost) :-
   (Task = go(_) -> nb_setval(opt, 1);
    otherwise -> nb_setval(opt, 0)),
   my_agent(Agent),
-  energy_status(Agent),
+  checking(Agent),
   query_world( agent_current_position, [Agent,P] ),
-
   solve_task_Astar(Task, [[c(0,0,P),P]],R,Cost,_NewPos,[]),!,
   nb_getval(opt, Opt),
   (Opt = 1 -> reverse(R,[_Init|Path]),query_world( agent_do_moves, [Agent,Path] );
   otherwise -> R = [Last|_],solve_task(go(Last),_)).
 
 
+
 %%%%%%%%%%%%%%%%%%
 %%% for part3
 
-% energy_status, set the lowest energy here
-energy_status(Agent) :-
+% checking, set the lowest energy here
+checking(Agent):-
   query_world(agent_current_energy, [Agent, Energy]),
-  (Energy > 50 -> true; otherwise -> solve_task_energy(find(c(_)), _)).
+  ( Energy > 50 -> true
+  ; otherwise -> solve_task_engergy(find(c(_)), _)
+  ).
 
 
 % find next oracle
-solve_task_o(find_next_oracle( o(X) ), Cost) :-
-  my_agent( Agent ),
-  energy_status( Agent ),
-  query_world( agent_current_position, [Agent, P]),
-  solve_task_bfs( find_next_oracle( o(X) ), [[c(0,0,P),P]], R, Cost, _NewPos, [] ),!,
-  reverse( R , [_Init | Path] ),
-  query_world(agent_do_moves, [Agent, Path]).
-
-
-% in case you run out of energy
-solve_task_energy( find( c(X) ), Cost ) :-
-  my_agent( Agent ),
-  query_world(agent_current_position, [Agent, P]),
-  solve_task_bfs( find( c(X) ), [[c(0,0,P),P]], R, Cost, _NewPos, []),!,
+solve_task_o(find_next_oracle(o(X)),Cost):-
+  my_agent(Agent),
+  checking(Agent),
+  query_world( agent_current_position, [Agent,P] ),
+  solve_task_bfs(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  ,
   reverse(R,[_Init|Path]),
-  otherwise -> query_world( agent_do_moves, [Agent,Path] ),
-  write("Top up energy now"),nl,
+  otherwise -> query_world( agent_do_moves, [Agent,Path] )
+  .
+
+
+
+% in case if you run out of energy
+solve_task_engergy(find(c(X)),Cost):-
+  my_agent(Agent),
+  query_world( agent_current_position, [Agent,P] ),
+  solve_task_bfs(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  ,
+  reverse(R,[_Init|Path]),
+  otherwise -> query_world( agent_do_moves, [Agent,Path] )
+  ,
+  write("topup energy now"),nl,
   query_world(agent_topup_energy, [Agent, c(X)]),
   query_world(agent_current_energy, [Agent, Energy]),
   write("ENERGY = "), write(Energy),nl.
 
 
-%%%%%%%%% helper functions for part3
+%%%%%%%%% helper functions
 solve_task_bfs(Task, [Current|_], R, Costs, NewPos, _):-
   Current = [c(_,G,P)|RPath],
   Costs = [cost(Cost), depth(G)],
   achieved(Task, [c(G,P)|RPath], R, Cost, NewPos).
 
-
-solve_task_bfs(Task, [Current|Agenda], RR, Cost, NewPos, Seen):-
+solve_task_bfs(Task, [Current|Agenda], RR, Cost, NewPos, Visited):-
   Current = [c(_,G,P)|RPath],
-  (setof(Child, find_child(P, RPath, G, Child, Seen), Children) -> append(Agenda, Children, ModifiedAgenda)
-  ; ModifiedAgenda = Agenda
+  (setof(Child, find_child(P, RPath, G, Child, Visited), Children) -> append(Agenda, Children, NewAgenda)
+  ; NewAgenda = Agenda
   ),
-  deleteSeen(ModifiedAgenda,Seen,FinalAgenda),
-  solve_task_bfs(Task, FinalAgenda, RR, Cost, NewPos, [P | Seen]).
+  remove_visited(NewAgenda, Visited, FinalAgenda),
+  solve_task_bfs(Task,FinalAgenda,RR,Cost,NewPos,[P|Visited]).
+
+remove_visited(Agenda, [], Agenda).
+remove_visited(Agenda, [P|Tail], NewAgenda) :-
+  delete(Agenda, [c(_,_,P)|_], NewAgenda),
+  remove_visited(NewAgenda, Tail, _).
 
 
-deleteSeen(Agenda, [], Agenda).
-deleteSeen(Agenda, [P|Tail], ModifiedAgenda) :-
-  delete(Agenda, [c(_,_,P)|_], ModifiedAgenda),
-  deleteSeen(ModifiedAgenda, Tail, _).
-
-
-find_child(P,RPath,G,Child,Seen) :-
+find_child(P, RPath, G, Child, Visited) :-
   search(P, P1, R, _),
   \+ memberchk(R, RPath),
-  \+ memberchk(P1, Seen),
-  G1 is G + 1,
-  Child = [c( G1, G1, P1 ), P1 | RPath].
+  \+ memberchk(P1, Visited),
+  G1 is G+1,
+  Child = [c(G1, G1, P1), P1|RPath].
+
+
 
 
 %%%%%%%%%% Useful predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,10 +129,10 @@ solve_task_Astar(Task,[Current|Agenda],RR,Cost,NewPos,Closelist) :-
 
   % add children to the adenda
   (setof([c(F1,G1,Pos1),Pos1|RPath], search_Astar(P,Pos1,F1,G1,Closelist), Children)
-  -> merge(Agenda, Children, ModifiedAgenda);
-  ModifiedAgenda = Agenda),
+  -> merge(Agenda, Children, NewAgenda);
+  NewAgenda = Agenda),
 
-  exclude(memberchk(Closelist), ModifiedAgenda, FilteredAgenda),
+  exclude(memberchk(Closelist), NewAgenda, FilteredAgenda),
   solve_task_Astar(Task,FilteredAgenda,RR,Cost,NewPos,[P|Closelist]).
 
 
@@ -175,7 +182,6 @@ achieved(find(O),Current,RPath,Cost,NewPos) :-
   ).
 
 
-%%% for part3
 achieved(find_next_oracle(O), Current, RPath, Cost, NewPos) :-
   Current = [c(Cost, NewPos)|RPath],
   my_agent(Agent),
@@ -184,5 +190,5 @@ achieved(find_next_oracle(O), Current, RPath, Cost, NewPos) :-
   \+ query_world(agent_check_oracle, [Agent, O ]), write("ORACLE FOUND, I = "), write(O), nl
   ).
 
-search(F, N, N, 1) :-
-  map_adjacent(F, N, empty).
+search(F,N,N,1) :-
+  map_adjacent(F,N,empty).
