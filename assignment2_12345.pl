@@ -14,6 +14,10 @@ candidate_number(12345).
 % part4 if we have time
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+solve_general(Task,Cost):-
+  ( part_module(4) -> solve_task_part4_o(Task,Cost);
+    otherwise -> solve_task_o(Task,Cost)
+  ).
 
 
 solve_task(Task,Cost) :-
@@ -23,12 +27,27 @@ solve_task(Task,Cost) :-
   my_agent(Agent),
   energy_status(Agent),
   query_world( agent_current_position, [Agent,P] ),
-
   solve_task_Astar(Task, [[c(0, 0, P), P]], R, Cost, _NewPos, []),!,
   nb_getval(opt, Opt),
   (Opt = 1 -> reverse(R,[_Init|Path]),query_world( agent_do_moves, [Agent,Path] );
   otherwise -> R = [Last|_],solve_task(go(Last),_)).
 
+
+robustness(_,[_,[]]).
+robustness(Task, [Agent, [Head|Tail]]):-
+  ( query_world(check_pos, [Head, empty]) ->
+    query_world( agent_do_moves, [Agent,[Head]] ), robustness(Task, [Agent, Tail])
+  ; otherwise -> write("I'm blocked, need a new path!!"),nl,solve_task_part4_o(Task, _)
+  ).
+
+solve_task_part4_o(goto_another_oracle( o(X) ),Cost):-
+  my_agent(Agent),
+  energy_status(Agent),
+  query_world( agent_current_position, [Agent,P] ),
+  solve_bfs(goto_another_oracle( o(X) ),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!,
+  reverse(R,[_Init|Path]),
+  robustness(goto_another_oracle( o(X) ), [Agent, Path])
+  ; query_world( agent_do_moves, [Agent,Path] ).
 
 
 
