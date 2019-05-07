@@ -67,7 +67,7 @@ find_identity_o(A):-
 
 
 find_actor_identity_o(A, Actors) :-
-  solve_task_o(goto_another_oracle(o(X)), _),
+  solve_general(goto_another_oracle(o(X)), _),
   my_agent(Agent),
   query_world( agent_ask_oracle, [Agent, o(X), link, L]),
   include(check_links( L ), Actors, NewActors),
