@@ -75,24 +75,24 @@ solve_bfs( Task,[Current | _],R,CostsBFS,NewPos,_) :-
   achieved( Task,[c(G, P) | RPath],R,Cost,NewPos ).
 
 
-solve_bfs(Task,[Current|Agenda],RR,Cost,NewPos,Visited):-
+solve_bfs(Task,[Current|Rest],RR,Cost,NewPos,Explored):-
   Current=[c(_, G, P) | RPath],
-  (setof( Child,findChild( P,RPath,G,Child,Visited ),FoundChild) -> append( Agenda,FoundChild,NewAgenda );
-  NewAgenda=Agenda),
-  delete_seen( NewAgenda,Visited,NewestAgenda ),
-  solve_bfs( Task, NewestAgenda, RR, Cost, NewPos, [P | Visited]).
+  (setof( Child,findChild( P,RPath,G,Child,Explored ),AllFoundChild) -> append( Rest,AllFoundChild,ModifRest );
+  ModifRest=Rest),
+  delete_seen( ModifRest,Explored,NewestRest ),
+  solve_bfs( Task, NewestRest, RR, Cost, NewPos, [P | Explored]).
 
 
-delete_seen(Agenda,[],Agenda).
-delete_seen( Agenda,[P | Ps],NewAgenda ) :-
-  delete( Agenda,[c(_,_,P) | _],NewAgenda ),
-  delete_seen( NewAgenda,Ps, _).
+delete_seen(Rest,[],Rest).
+delete_seen( Rest,[P | Ps],ModifRest ) :-
+  delete( Rest,[c(_,_,P) | _],ModifRest ),
+  delete_seen( ModifRest,Ps, _).
 
 
-findChild(P,RPath,G,Child,Visited) :-
+findChild(P,RPath,G,Child,Explored) :-
   search(P,P1,R,_),
-  \+ memberchk(R,RPath),
-  \+ memberchk(P1,Visited),
+  \+ memberchk(R,RPath),    % check we have not been here already
+  \+ memberchk(P1,Explored),
   G1 is G+1,
   Child=[c(G1,G1,P1),P1 | RPath].
 
