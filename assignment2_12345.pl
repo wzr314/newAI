@@ -119,7 +119,6 @@ solve_task_Astar(Task,[Current|_],RPath,Cost,NewPos,_):-
 solve_task_Astar(Task,[Current|Agenda],RR,Cost,NewPos,Closelist) :-
   Current = [c(_,G,P)|RPath],
   G1 is G + 1,
-
   % add children to the adenda
   (setof([c(F1,G1,Pos1),Pos1|RPath], search_Astar(P,Pos1,F1,G1,Closelist), Children)
   -> merge(Agenda, Children, ModifiedAgenda);
