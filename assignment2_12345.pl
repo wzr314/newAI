@@ -35,21 +35,6 @@ solve_task(Task,Cost) :-
 
 
 
-%%%% for part4 dynamic world
-% stupid method not quite working.
-try_part4(_, [_, []]) :- true.
-
-try_part4(Task, [Agent, Path]) :-
-  Path = [H|T],
-  (query_world(check_pos, [H, empty]) ->
-    query_world(agent_do_moves, [Agent, [H]]),
-    try_part4(Task, [Agent, T]);
-    otherwise -> write("I'm Blocked, Need A New Path!!"),nl,
-    solve_task_o(Task, _)
-  ).
-
-
-
 %%%%%%%%%%%%%%%%%%
 %%% for part3
 
