@@ -29,10 +29,9 @@ check_links(Link, A) :-
   member( Link, Links ).
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Part 3%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Generate the actor links, find the location of all charing stations and oracles.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Part 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Generate the actor links, find the location of all charging stations and oracles.
 % P: Position; L:List.
-%%
 
 find_identity_o(A):-
   findall(Actor, actor(Actor), Actors),
