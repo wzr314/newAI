@@ -1,54 +1,51 @@
-% candidate_number(12345).
+candidate_number(12345).
 
 % Find hidden identity by repeatedly calling agent_ask_oracle(oscar,o(1),link,L)
 % find_identity(-A)
+
+
 find_identity(A):-
-  (part_module(2)   -> find_identity_2(A);
-  otherwise  -> find_identity_o(A)
-% otherwise -> writeln("Not implemented yet sry").
+  (part_module(2)   -> find_identity_2(A)
+  ; otherwise -> find_identity_o(A)
   ).
 
-% Asking the oracle to find out the agent's identity
-find_identity_2(A):-
-  findall(Actor, actor(Actor), Actors),
-  find_actor_identity(A, Actors).
 
-% Predicate for recursively asking the oracle for the link and identify the new actors by filtering
-% If it succeeds it returns the actor name (A).
-find_actor_identity(A, Actors) :-
-  agent_ask_oracle(oscar, o(1), link, L),
-  include(link_on_page(L), Actors, NewActors),
-  length(NewActors, Length),
-  (Length = 1 -> nth0(0, NewActors, A);
-   find_actor_identity(A, NewActors)
-  ).
+find_identity_2( A ):-
+  findall( Actor, actor( Actor ), ListA ),
+  find_actor_wiki( A, ListA ).
 
-link_on_page(Link,A) :-
-  links_on_page(A, Links),
-  member(Link, Links).
 
-%Generating links for one actor
-links_on_page(A, Links):-
-  actor(A),
-  setof(Link, (link(Link), wp(A,WT),wt_link(WT,Link)), Links).
+find_actor_wiki( A, ListA ) :-
+  agent_ask_oracle( oscar, o(1), link, L ),
+  include( check_links(L), ListA, FilterL ),
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Part 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Generate the actor links, find the location of all charging stations and oracles.
+  length( FilterL, Size ),
+  (Size = 1->nth0( 0, FilterL, A ); find_actor_wiki( A, FilterL )).
+
+
+check_links(Link, A) :-
+  actor( A ),
+  setof(Link, ( link( Link ), wp(A, WT), wt_link( WT, Link) ), Links ),
+  member( Link, Links ).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Part 3%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Generate the actor links, find the location of all charing stations and oracles.
 % P: Position; L:List.
+%%
 
 find_identity_o(A):-
   findall(Actor, actor(Actor), Actors),
   find_actor_identity_o(A, Actors).
 
+
 find_actor_identity_o(A, Actors) :-
+  solve_task_o(find_next_oracle(o(X)), _),
   my_agent(Agent),
-  solve_task_general(find_next_one(o(X)), _),
   query_world( agent_ask_oracle, [Agent, o(X), link, L]),
-  include(link_on_page(L), Actors, NewActors),
+  include(check_links( L ), Actors, NewActors),
   length(NewActors, Length),
-  ( Length = 1 -> nth0(0, NewActors, A)
-  ; find_actor_identity_o(A, NewActors)
-  ).
+  ( Length = 1 -> nth0(0, NewActors, A); find_actor_identity_o(A, NewActors)).
 
 
 %find_identity_o(A):-

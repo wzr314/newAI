@@ -15,11 +15,6 @@ candidate_number(12345).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-% run different tasks based on which part you are going
-solve_task_general(Task,Cost) :-
-  part_module(1) -> solve_task(Task,Cost),!;
-  otherwise -> solve_task_o(Task,Cost).
-
 
 solve_task(Task,Cost) :-
   b_setval(target_pos,Task),
@@ -35,14 +30,16 @@ solve_task(Task,Cost) :-
 
 
 
-%%%%%%%%%%%%%%%%%%
-%%% for part3
 
+%%%%%%%%%%%%%%%%%%
+%% for part3
 % checking, set the lowest energy here
 checking(Agent):-
   query_world(agent_current_energy, [Agent, Energy]),
+  write("ENERGY = "),
+  write(Energy),nl,
   ( Energy > 50 -> true
-  ; otherwise -> solve_task_engergy(find(c(_)), _)
+  ; otherwise -> solve_task_o(find(c(_)), _)
   ).
 
 
@@ -51,50 +48,48 @@ solve_task_o(find_next_oracle(o(X)),Cost):-
   my_agent(Agent),
   checking(Agent),
   query_world( agent_current_position, [Agent,P] ),
-  solve_task_bfs(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  solve_task_breadth(find_next_oracle(o(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
   ,
   reverse(R,[_Init|Path]),
-  otherwise -> query_world( agent_do_moves, [Agent,Path] )
+  query_world( agent_do_moves, [Agent,Path] )
   .
 
-
-
 % in case if you run out of energy
-solve_task_engergy(find(c(X)),Cost):-
+solve_task_o(find(c(X)),Cost):-
   my_agent(Agent),
   query_world( agent_current_position, [Agent,P] ),
-  solve_task_bfs(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
+  solve_task_breadth(find(c(X)),[[c(0,0,P),P]],R,Cost,_NewPos,[]),!
   ,
   reverse(R,[_Init|Path]),
-  otherwise -> query_world( agent_do_moves, [Agent,Path] )
+  query_world( agent_do_moves, [Agent,Path] )
   ,
-  write("topup energy now"),nl,
-  query_world(agent_topup_energy, [Agent, c(X)]),
+  write("Topuping"),nl,
+  query_world( agent_topup_energy, [Agent, c(X)]),
   query_world(agent_current_energy, [Agent, Energy]),
   write("ENERGY = "), write(Energy),nl.
 
 
 %%%%%%%%% helper functions
-solve_task_bfs(Task, [Current|_], R, Costs, NewPos, _):-
+solve_task_breadth(Task, [Current|_], R, Costs, NewPos, _):-
   Current = [c(_,G,P)|RPath],
   Costs = [cost(Cost), depth(G)],
   achieved(Task, [c(G,P)|RPath], R, Cost, NewPos).
 
-solve_task_bfs(Task, [Current|Agenda], RR, Cost, NewPos, Visited):-
+solve_task_breadth(Task, [Current|Agenda], RR, Cost, NewPos, Visited):-
   Current = [c(_,G,P)|RPath],
-  (setof(Child, find_child(P, RPath, G, Child, Visited), Children) -> append(Agenda, Children, NewAgenda)
+  (setof(Child, breadth_child(P, RPath, G, Child, Visited), Children) -> append(Agenda, Children, NewAgenda)
   ; NewAgenda = Agenda
   ),
-  remove_visited(NewAgenda, Visited, FinalAgenda),
-  solve_task_bfs(Task,FinalAgenda,RR,Cost,NewPos,[P|Visited]).
+  remove_visited_from_agenda(NewAgenda, Visited, FinalAgenda),
+  solve_task_breadth(Task,FinalAgenda,RR,Cost,NewPos,[P|Visited]).
 
-remove_visited(Agenda, [], Agenda).
-remove_visited(Agenda, [P|Tail], NewAgenda) :-
-  delete(Agenda, [c(_,_,P)|_], NewAgenda),
-  remove_visited(NewAgenda, Tail, _).
+remove_visited_from_agenda(Agenda, [], Agenda).
+remove_visited_from_agenda(Agenda, [P|Tail], NewAgenda) :-
+    delete(Agenda, [c(_,_,P)|_], NewAgenda),
+    remove_visited_from_agenda(NewAgenda, Tail, _).
 
 
-find_child(P, RPath, G, Child, Visited) :-
+breadth_child(P, RPath, G, Child, Visited) :-
   search(P, P1, R, _),
   \+ memberchk(R, RPath),
   \+ memberchk(P1, Visited),
@@ -134,7 +129,6 @@ solve_task_Astar(Task,[Current|Agenda],RR,Cost,NewPos,Closelist) :-
   exclude(memberchk(Closelist), NewAgenda, FilteredAgenda),
   solve_task_Astar(Task,FilteredAgenda,RR,Cost,NewPos,[P|Closelist]).
 
-
 achieved_Astar(go(Exit),Current,RPath,Cost,NewPos) :-
   Current = [c(_,Cost,NewPos)|RPath],
   ( Exit=none -> true
@@ -149,10 +143,10 @@ achieved_Astar(find(O),Current,RPath,Cost,NewPos) :-
   otherwise -> true.
 
 
-manhattan(Pos, Goal, D):-
-  Pos = p(X1,Y2),
-  Goal = p(X2,Y2),
-  D is abs(X1-X2) + abs(Y1-Y2).
+cal_manhattan_dis(Pos, Goal, Dist):-
+  Pos = p(X_0,Y_0),
+  Goal = p(X_1,Y_1),
+  Dist is abs(X_0-X_1) + abs(Y_0-Y_1).
 
 search_Astar(P,N,F1,G1,Closelist):-
   map_adjacent(P,N,empty),
@@ -160,7 +154,7 @@ search_Astar(P,N,F1,G1,Closelist):-
   nb_getval(opt, Opt),
 
   (Opt = 1 -> b_getval(target_pos, go(Goal)),
-  manhattan(N, Goal, D),
+  cal_manhattan_dis(N, Goal, Dist),
   H is Dist;
   otherwise -> H is 0),
   F1 is H + G1.
@@ -180,11 +174,10 @@ achieved(find(O),Current,RPath,Cost,NewPos) :-
   ; otherwise -> RPath = [Last|_],map_adjacent(Last,_,O)
   ).
 
-
 achieved(find_next_oracle(O), Current, RPath, Cost, NewPos) :-
   Current = [c(Cost, NewPos)|RPath],
   my_agent(Agent),
-  ( O=none    -> true
+  ( O=none -> true
   ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O),
   \+ query_world(agent_check_oracle, [Agent, O ]), write("ORACLE FOUND, I = "), write(O), nl
   ).
