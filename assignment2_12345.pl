@@ -50,7 +50,7 @@ solve_task_o( find( c(X) ), Cost ) :-
   query_world( agent_do_moves, [Agent,Path] ),
   query_world(agent_topup_energy, [Agent,c(X)] ),
   query_world( agent_current_energy, [Agent,Energy] ),
-  write("Current energy = "),
+  write("Current energy is "),
   write(Energy),
   nl.
 
@@ -67,32 +67,32 @@ solve_task_o( find_next_oracle( o(X) ), Cost ) :-
 
 
 %%%%%%%%% helper functions
-solve_bfs(Task, [Current|_], R, Costs, NewPos, _):-
-  Current = [c(_,G,P)|RPath],
-  Costs = [cost(Cost), depth(G)],
-  achieved(Task, [c(G,P)|RPath], R, Cost, NewPos).
+solve_bfs( Task,[Current | _],R,CostsBFS,NewPos,_) :-
+  Current = [c(_, G, P) | RPath],
+  CostsBFS = [cost( Cost ), depth( G )],
+  achieved( Task,[c(G, P) | RPath],R,Cost,NewPos ).
 
 
-solve_bfs(Task, [Current|Agenda], RR, Cost, NewPos, Visited):-
-  Current = [c(_,G,P)|RPath],
-  (setof(Child, findChild(P, RPath, G, Child, Visited), Children) -> append(Agenda, Children, NewAgenda); NewAgenda = Agenda),
-  delete_seen(NewAgenda, Visited, NewestAgenda),
-  solve_bfs(Task,NewestAgenda,RR,Cost,NewPos,[P|Visited]).
+solve_bfs(Task,[Current|Agenda],RR,Cost,NewPos,Visited):-
+  Current=[c(_, G, P) | RPath],
+  (setof( Child,findChild( P,RPath,G,Child,Visited ),FoundChild) -> append( Agenda,FoundChild,NewAgenda );
+  NewAgenda=Agenda),
+  delete_seen( NewAgenda,Visited,NewestAgenda ),
+  solve_bfs( Task, NewestAgenda, RR, Cost, NewPos, [P | Visited]).
 
 
-delete_seen(Agenda, [], Agenda).
-delete_seen(Agenda, [P|Tail], NewAgenda) :-
-  delete(Agenda, [c(_,_,P)|_], NewAgenda),
-  delete_seen(NewAgenda, Tail, _).
+delete_seen(Agenda,[],Agenda).
+delete_seen( Agenda,[P | Ps],NewAgenda ) :-
+  delete( Agenda,[c(_,_,P) | _],NewAgenda ),
+  delete_seen( NewAgenda,Ps, _).
 
 
-findChild(P, RPath, G, Child, Visited) :-
-  search(P, P1, R, _),
-  \+ memberchk(R, RPath),
-  \+ memberchk(P1, Visited),
+findChild(P,RPath,G,Child,Visited) :-
+  search(P,P1,R,_),
+  \+ memberchk(R,RPath),
+  \+ memberchk(P1,Visited),
   G1 is G+1,
-  Child = [c(G1, G1, P1), P1|RPath].
-
+  Child=[c(G1,G1,P1),P1 | RPath].
 
 
 
@@ -111,14 +111,14 @@ solve_task_bt(Task,Current,D,RR,Cost,NewPos) :-
   solve_task_bt(Task,[c(F1,P1),R|RPath],D1,RR,Cost,NewPos).  % backtrack search
 
 
-%%%% Agenda based A star %%%%
+%%%% Agenda based A star %%%%%%%%%%%%%%%%%%%%%
 solve_task_Astar(Task,[Current|_],RPath,Cost,NewPos,_):-
   achieved_Astar(Task,Current,RPath,Cost,NewPos).
 
 solve_task_Astar(Task,[Current|Agenda],RR,Cost,NewPos,Closelist) :-
   Current = [c(_,G,P)|RPath],
   G1 is G + 1,
-  % add children to the adenda
+  % add children to the agenda
   (setof([c(F1,G1,Pos1),Pos1|RPath], search_Astar(P,Pos1,F1,G1,Closelist), Children)
   -> merge(Agenda, Children, NewAgenda);
   NewAgenda = Agenda),
@@ -174,12 +174,12 @@ achieved(find(O),Current,RPath,Cost,NewPos) :-
 
 %%% for part3
 
-achieved(find_next_oracle(O), Current, RPath, Cost, NewPos) :-
-  Current = [c(Cost, NewPos)|RPath],
+achieved(find_next_oracle(O),Current,RPath,Cost,NewPos) :-
   my_agent(Agent),
-  ( O=none -> true
+  Current = [c(Cost,NewPos)|RPath],
+  ( O=none    -> true
   ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O),
-  \+ query_world(agent_check_oracle, [Agent, O ]),
+  \+ query_world(agent_check_oracle,[Agent, O] ),
   write("Visited oracle "),
   write(O),
   nl ).
