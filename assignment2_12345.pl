@@ -36,31 +36,33 @@ solve_task(Task,Cost) :-
 %% for part3
 
 % checking, set the lowest energy here
-energy_status(Agent):-
-  query_world(agent_current_energy, [Agent, Energy]),
-  (Energy>50->true; otherwise->solve_task_o(find(c(_)),_)).
+energy_status( Agent ) :-
+  query_world( agent_current_energy,[Agent,E] ),
+  (E>50->true; otherwise->solve_task_o(find(c(_)),_)).
 
 
-% in case if you run out of energy
+% in case you run out of energy
 solve_task_o( find( c(X) ), Cost ) :-
   my_agent( Agent ),
   query_world(agent_current_position,[Agent, P]),
-  solve_bfs( find(c(X)), [[c(0, 0, P), P]], R, Cost, _NewPos, []),!,
+  solve_bfs( find(c(X)), [[c(0, 0, P), P]], R, Cost, _NewPos, []),
+  !,
   reverse( R, [_Init | Path] ),
   query_world( agent_do_moves, [Agent,Path] ),
   query_world(agent_topup_energy, [Agent,c(X)] ),
-  query_world( agent_current_energy, [Agent,Energy] ),
+  query_world( agent_current_energy, [Agent,E] ),
   write("Current energy is "),
-  write(Energy),
+  write(E),
   nl.
 
 
 % find next oracle
-solve_task_o( find_next_oracle( o(X) ), Cost ) :-
+solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
   my_agent( Agent ),
   energy_status( Agent ),
-  query_world(agent_current_position, [Agent, P]),
-  solve_bfs( find_next_oracle( o(X) ), [[c(0,0,P),P]], R, Cost, _NewPos, [] ),!,
+  query_world(agent_current_position, [Agent, Pos]),
+  solve_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, [] ),
+  !,
   reverse( R, [_Init | Path ] ),
   query_world(agent_do_moves,[Agent, Path]).
 
@@ -174,7 +176,7 @@ achieved(find(O),Current,RPath,Cost,NewPos) :-
 
 %%% for part3
 
-achieved(find_next_oracle(O),Current,RPath,Cost,NewPos) :-
+achieved(goto_another_oracle(O),Current,RPath,Cost,NewPos) :-
   my_agent(Agent),
   Current = [c(Cost,NewPos)|RPath],
   ( O=none    -> true

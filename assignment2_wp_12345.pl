@@ -30,24 +30,6 @@ check_links(Link, A) :-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Part 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Generate the actor links, find the location of all charing stations and oracles.
-% P: Position; L:List.
-%%
-
-find_identity_o(A):-
-  findall(Actor, actor(Actor), Actors),
-  find_actor_identity_o(A, Actors).
-
-
-find_actor_identity_o(A, Actors) :-
-  solve_task_o(find_next_oracle(o(X)), _),
-  my_agent(Agent),
-  query_world( agent_ask_oracle, [Agent, o(X), link, L]),
-  include(check_links( L ), Actors, NewActors),
-  length(NewActors, Length),
-  ( Length = 1 -> nth0(0, NewActors, A); find_actor_identity_o(A, NewActors)).
-
-
 %find_identity_o(A):-
 %  generate_actor_link_list(ActorList),
 %  my_agent(Agent),
@@ -73,3 +55,21 @@ find_actor_identity_o(A, Actors) :-
 
 %Find the oracles locations. (10 in total)
 % find_oracles(OraclesLocations,P,OraclesLocations_Draft):-
+
+
+% Generate the actor links, find the location of all charing stations and oracles.
+% P: Position; L:List.
+%%
+
+find_identity_o(A):-
+  findall(Actor, actor(Actor), Actors),
+  find_actor_identity_o(A, Actors).
+
+
+find_actor_identity_o(A, Actors) :-
+  solve_task_o(goto_another_oracle(o(X)), _),
+  my_agent(Agent),
+  query_world( agent_ask_oracle, [Agent, o(X), link, L]),
+  include(check_links( L ), Actors, NewActors),
+  length(NewActors, Size),
+  ( Size = 1 -> nth0(0, NewActors, A); find_actor_identity_o(A, NewActors)).
