@@ -45,7 +45,7 @@ energy_status(Agent):-
 solve_task_o( find( c(X) ), Cost ) :-
   my_agent( Agent ),
   query_world(agent_current_position,[Agent, P]),
-  solve_bfs( find(c(X)), [[c(0, 0, P), P]], R, Cost, _NewPos, []),!,
+  solveBFS( find(c(X)), [[c(0, 0, P), P]], R, Cost, _NewPos, []),!,
   reverse( R, [_Init | Path] ),
   query_world( agent_do_moves, [Agent,Path] ),
   query_world(agent_topup_energy, [Agent,c(X)] ),
@@ -60,38 +60,38 @@ solve_task_o( find_next_oracle( o(X) ), Cost ) :-
   my_agent( Agent ),
   energy_status( Agent ),
   query_world(agent_current_position, [Agent, P]),
-  solve_bfs( find_next_oracle( o(X) ), [[c(0,0,P),P]], R, Cost, _NewPos, [] ),!,
+  solveBFS( find_next_oracle( o(X) ), [[c(0,0,P),P]], R, Cost, _NewPos, [] ),!,
   reverse( R, [_Init | Path ] ),
   query_world(agent_do_moves,[Agent, Path]).
 
 
 
 %%%%%%%%% helper functions
-solve_bfs(Task, [Current|_], R, Costs, NewPos, _):-
-  Current = [c(_,G,P)|RPath],
-  Costs = [cost(Cost), depth(G)],
+
+solveBFS(Task,[Current | _],R,Cost,NewPos,_) :-
+  Current = [c(_, G, P) | RPath],
+  Cost = [cost(Cost), depth(G)],
   achieved(Task, [c(G,P)|RPath], R, Cost, NewPos).
 
-solve_bfs(Task, [Current|Agenda], RR, Cost, NewPos, Visited):-
-  Current = [c(_,G,P)|RPath],
-  (setof(Child, findChild(P, RPath, G, Child, Visited), Children) -> append(Agenda, Children, NewAgenda)
-  ; NewAgenda = Agenda
-  ),
-  remove_visited_from_agenda(NewAgenda, Visited, FinalAgenda),
-  solve_bfs(Task,FinalAgenda,RR,Cost,NewPos,[P|Visited]).
+solveBFS(Task, [Current|Agenda], RR, Cost, NewPos, Visited):-
+  Current = [c(_, G, P ) | RPath],
+  (setof(Child,findChild( P,RPath,G,Child,Visited ),Children)->append( Agenda,Children,NewAgenda); NewAgenda=Agenda),
+  deleteSeen(NewAgenda,Visited,NewestAgenda),
+  solveBFS(Task, NewestAgenda, RR, Cost, NewPos, [P | Visited]).
 
-remove_visited_from_agenda(Agenda, [], Agenda).
-remove_visited_from_agenda(Agenda, [P|Tail], NewAgenda) :-
-    delete(Agenda, [c(_,_,P)|_], NewAgenda),
-    remove_visited_from_agenda(NewAgenda, Tail, _).
+deleteSeen(Agenda,[],Agenda).
+
+deleteSeen( Agenda,[P | Tail],NewAgenda ) :-
+    delete( Agenda,[c(_,_,P) | _],NewAgenda ),
+    deleteSeen( NewAgenda,Tail, _).
 
 
-findChild(P, RPath, G, Child, Visited) :-
-  search(P, P1, R, _),
+findChild(P,RPath,G,Child,Visited) :-
+  search(P,P1,R,_),
   \+ memberchk(R, RPath),
   \+ memberchk(P1, Visited),
-  G1 is G+1,
-  Child = [c(G1, G1, P1), P1|RPath].
+  G1 is G + 1,
+  Child = [c(G1,G1,P1), P1 | RPath].
 
 
 
@@ -171,16 +171,14 @@ achieved(find(O),Current,RPath,Cost,NewPos) :-
   ; otherwise -> RPath = [Last|_],map_adjacent(Last,_,O)
   ).
 
-
 %%% for part3
 
-achieved(find_next_oracle(O), Current, RPath, Cost, NewPos) :-
+achieved( find_next_oracle(O),Current,RPath,Cost,NewPos) :-
   Current = [c(Cost, NewPos)|RPath],
   my_agent(Agent),
-  ( O=none -> true
-  ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O),
-  \+ query_world(agent_check_oracle, [Agent, O ]), write("Oracle found, I = "), write(O), nl
-  ).
+  (O = none->true; otherwise->RPath=[Last | _], map_adjacent( Last,_,O ),
+  \+ query_world( agent_check_oracle,[Agent,O])).
+
 
 search(F,N,N,1) :-
   map_adjacent(F,N,empty).
