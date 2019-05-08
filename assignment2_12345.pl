@@ -33,7 +33,7 @@ solve_task( Task,Cost ) :-
   otherwise -> R=[Final | _], solve_task( go( Final ),_) ).
 
 %%%%%%%%%%%%%%%%%%
-%% for part3 %%
+%%%%%% for part3 %%
 
 % set the lowest allowed energy here
 energy_status( A ) :-
@@ -145,13 +145,13 @@ solve_task_A_Star( Task,[Curr | _],RPath,Cost,NewPos, _ ) :-
   achieved_A_Star( Task, Curr, RPath, Cost, NewPos ).
 
 
-solve_task_A_Star( Task, [Curr | Result], RR, Cost, NewPos, Closest) :-
+solve_task_A_Star( Task, [Curr | Result], RR, Cost, NewPos, NextConnection) :-
   Curr=[c(_, G, P) | RPath], G1 is G + 1,
   % add child to the agenda
-  (setof([c(F1, G1, Pos1) , Pos1 | RPath], search_A_Star( P, Pos1, F1, G1, Closest ), Connection) % search adjacent
+  (setof([c(F1, G1, Pos1) , Pos1 | RPath], search_A_Star( P, Pos1, F1, G1, NextConnection ), Connection) % search adjacent
   -> merge( Result, Connection, ModifResult ); ModifResult=Result),
-  exclude( memberchk( Closest ),ModifResult,NewestResult ), % filter
-  solve_task_A_Star( Task,NewestResult,RR,Cost,NewPos,[P | Closest] ).
+  exclude( memberchk( NextConnection ),ModifResult,NewestResult ), % filter for fails
+  solve_task_A_Star( Task,NewestResult,RR,Cost,NewPos,[P | NextConnection] ).
 
 achieved_A_Star( go(Exit), Curr, RPath, Cost, NewPos ) :-
   Curr=[c(_, Cost, NewPos ) | RPath],
@@ -159,15 +159,15 @@ achieved_A_Star( go(Exit), Curr, RPath, Cost, NewPos ) :-
 
 achieved_A_Star( find(O), Curr, RPath, Cost, NewPos ) :-
   Curr=[c(_, Cost, NewPos ) | RPath],
-  ( O = none -> true ; otherwise -> memberchk( Last,RPath ), map_adjacent( Last, _,O ) ),
+  ( O = none -> true ; otherwise -> memberchk( Final,RPath ), map_adjacent( Final, _,O ) ),
   otherwise -> true.
 
-get_distance( Pos,Target,Length ) :-
-  Pos=p(X1,Y1), Target=p(X2,Y2),
+get_distance( Position,Target,Length ) :-
+  Position=p(X1,Y1), Target=p(X2,Y2),
   Length is abs( X1 - X2 ) + abs( Y1 - Y2 ).
 
-search_A_Star( P, N, F1, G1, Closest ) :-
-  map_adjacent( P, N, empty ), \+ memberchk( N,Closest ),
+search_A_Star( P, N, F1, G1, NextConnection ) :-
+  map_adjacent( P, N, empty ), \+ memberchk( N,NextConnection ),
   nb_getval( flag,Flag ),
   (Flag=1 -> b_getval( destination, go( Target ) ),
   get_distance( N,Target,Length ), H is Length ; otherwise -> H is 0 ),
@@ -186,19 +186,20 @@ achieved(find(O),Current,RPath,Cost,NewPos) :-
   ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O)
   ).
 
-%%%  for part3  %%%
+%%%%%%%% For part3  %%%
 
 achieved( goto_another_oracle( O ),Curr,RPath,Cost,NewPos ) :-
   Curr = [c( Cost, NewPos ) | RPath],
   my_agent( Agent ),
   ( O=none    -> true
-  ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O),
-  \+ query_world( agent_check_oracle,[Agent,O] ),
+  ; otherwise -> RPath = [Final | _], map_adjacent( Final,_,O ),
+  \+ query_world( agent_check_oracle,[Agent, O] ),
   % printing
-  write("Visiting oracle "),
+  write("Visiting "),
   write( O ),
   nl ).
 
+%%%%%%%%%%
 
 search(F,N,N,1) :-
   map_adjacent(F,N,empty).
