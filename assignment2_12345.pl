@@ -18,20 +18,19 @@ solve_general( Task, Cost ) :-
   ( part_module(4) -> solve_task_part4_o( Task,Cost ); otherwise -> solve_task_o( Task, Cost ) ).
 
 
-solve_task( Task, Cost ) :-
-  b_setval(destination,Task),
-  ( Task = go(_) -> nb_setval(flag, 1);
-   otherwise -> nb_setval(flag, 0)
-  ),
-  my_agent(A),
-  energy_status(A), % cheking energy
-  query_world( agent_current_position, [A,P] ),
+solve_task( Task,Cost ) :-
+  b_setval( destination,Task ),
+  ( Task=go(_) -> nb_setval( flag,1 ) ; otherwise -> nb_setval( flag,0 ) ),
+  my_agent( A ),
+  % see if need to top up
+  energy_status( A ),
+  % retrieve the position of the agent
+  query_world( agent_current_position,[A, Pos] ),
 
-  solve_task_A_Star(Task, [[c(0, 0, P), P]], R, Cost, _NewPos, []),!,
-  nb_getval(flag, Flag),
-  ( Flag = 1 -> reverse( R, [_Init | Path]),
-    query_world( agent_do_moves, [A,Path] );
-    otherwise -> R = [Last|_], solve_task( go(Last),_) ).
+  solve_task_A_Star( Task,[[c(0, 0, Pos), Pos]], R, Cost, _NewPos, [] ), !,
+  nb_getval( flag,Flag ),
+  ( Flag=1 -> reverse( R,[_Init | Path] ), query_world( agent_do_moves,[A, Path] );
+  otherwise -> R=[Final | _], solve_task( go( Final ),_) ).
 
 %%%%%%%%%%%%%%%%%%
 %% for part3 %%
