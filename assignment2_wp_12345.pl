@@ -4,32 +4,33 @@ candidate_number(12345).
 % find_identity(-A)
 
 
-find_identity(A):-
+find_identity(A) :-
   (part_module(2)   -> find_identity_2(A)
   ; otherwise -> find_identity_o(A)
   ).
 
 
-find_identity_2( A ):-
-  findall( A, actor( A ), ListA ),
-  find_wiki_actor( A, ListA ).
+find_identity_2( A ) :-
+  findall( A,actor( A ),ListA ),
+  find_wiki_actor( A,ListA ).
 
 
-find_wiki_actor( A, ListA ) :-
-  agent_ask_oracle( oscar, o(1), link, L ),
-  include( check_links(L), ListA, FilterL ),
+find_wiki_actor( A,ListA ) :-
+  agent_ask_oracle( oscar,o(1),link,L ),
+  include( checking_links(L),ListA,FilterL ),
 
-  length( FilterL, Size ),
+  length( FilterL,Size ),
   (Size = 1->nth0( 0, FilterL, A ); find_wiki_actor( A, FilterL )).
 
 
-check_links(Link, A) :-
+checking_links( L,A ) :-
   actor( A ),
-  setof(Link, ( link( Link ), wp(A, WT), wt_link( WT, Link) ), Links ),
-  member( Link, Links ).
+  setof(L,(link( L ),wp( A, WT ),wt_link( WT, L )),Ls),
+  member( L, Ls ).
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Part 3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% For part3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %find_identity_o(A):-
 %  generate_actor_link_list(ActorList),
 %  my_agent(Agent),
@@ -56,21 +57,22 @@ check_links(Link, A) :-
 %Find the oracles locations. (10 in total)
 % find_oracles(OraclesLocations,P,OraclesLocations_Draft):-
 
-
 % Generate the actor links, find the location of all charing stations and oracles.
 % P: Position; L:List.
 %%
 
-find_identity_o(A):-
-  findall(A, actor(A), ListA),
-  find_wiki_actor_o(A, ListA).
+
+find_identity_o( A ) :-
+  findall( A,actor( A ),ListA),
+  find_wiki_actor_o( A,ListA ).
 
 
-find_wiki_actor_o(A, ListA) :-
+find_wiki_actor_o( A,ListA ) :-
   solve_general( goto_another_oracle( o(X) ), _ ),
   my_agent( Agent ),
+  % trying to find the identity
   query_world(agent_ask_oracle,[Agent,o(X),link,L] ),
-  include( check_links( L ),ListA,FilterL ),
+  include( checking_links( L ),ListA,FilterL ),
   length( FilterL,Size),
   (Size=1 ->nth0(0,FilterL,A);
   find_wiki_actor_o( A,FilterL ) ).

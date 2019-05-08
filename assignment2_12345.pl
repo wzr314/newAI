@@ -15,13 +15,11 @@ candidate_number(12345).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-solve_general(Task,Cost) :-
-  ( part_module(4) -> solve_task_part4_o(Task, Cost) ;
-  otherwise -> solve_task_o(Task,Cost)
-  ).
+solve_general( Task, Cost ) :-
+  ( part_module(4) -> solve_task_part4_o( Task,Cost ) ; otherwise -> solve_task_o( Task, Cost ) ).
 
 
-solve_task(Task,Cost) :-
+solve_task( Task, Cost ) :-
   b_setval(destination,Task),
   ( Task = go(_) -> nb_setval(flag, 1);
    otherwise -> nb_setval(flag, 0)
@@ -34,11 +32,10 @@ solve_task(Task,Cost) :-
   nb_getval(flag, Flag),
   ( Flag = 1 -> reverse( R, [_Init | Path]),
     query_world( agent_do_moves, [A,Path] );
-    otherwise -> R = [Last|_], solve_task( go(Last),_)
-  ).
+    otherwise -> R = [Last|_], solve_task( go(Last),_) ).
 
 
-solve_task_part4_o( goto_another_oracle( o(X) ), Cost) :-
+solve_task_part4_o( goto_another_oracle( o(X) ), Cost ) :-
   my_agent( A ),
   % always check energy before a move
   energy_status( A ),
@@ -53,14 +50,9 @@ solve_task_part4_o( goto_another_oracle( o(X) ), Cost) :-
 
 % robustness search for part4
 robustness( _, [_, [] ] ).
-robustness( Task, [Agent, [H|T] ] ) :-
-  (query_world( check_pos, [H, empty] ) ->
-  query_world(agent_do_moves, [Agent, [H] ]),
-  robustness( Task, [Agent, T] );
-  otherwise -> write("World changing fast, I'm finding another path!!"),
-  nl,
-  solve_task_part4_o(Task, _ )
-  ).
+robustness( Task, [Agent, [Pos|ListMoves] ] ) :-
+  (query_world( check_pos, [Pos, empty] ) -> query_world(agent_do_moves, [Agent, [Pos] ]), robustness( Task, [Agent, ListMoves] );
+  otherwise -> solve_task_part4_o( Task, _ ) ).
 
 
 %%%%%%%%%%%%%%%%%%
@@ -70,25 +62,21 @@ robustness( Task, [Agent, [H|T] ] ) :-
 energy_status( A ) :-
   query_world( agent_current_energy,[A, E] ),
   % set energy threshold here
-  (E>50->true; otherwise->solve_task_o(find(c(_)), _)).   % if lower than 50, go charge first
+  (E>50 -> true ; otherwise -> solve_task_o( find( c(_) ), _) ).   % if lower than 50, go charge first
 
 
 % in case you run out of energy
 solve_task_o( find( c(X) ), Cost ) :-
   my_agent( Agent ),
   query_world(agent_current_position,[Agent, Pos]),
-  solve_bfs( find(c(X)), [[c(0, 0, Pos), Pos]],
-  R, Cost, _NewPos, []),
+  solve_bfs( find(c(X)), [[c(0, 0, Pos), Pos]], R, Cost, _NewPos, []),
   !,
   reverse( R, [_Init | Route] ),
   query_world( agent_do_moves, [Agent,Route] ),
   % agent has to top up
   query_world(agent_topup_energy, [Agent,c(X)] ),
   % ask agent for the new energy status
-  query_world( agent_current_energy, [Agent,E] ),
-  write( "Charging, new energy is " ),
-  write( E ),
-  nl.
+  query_world( agent_current_energy, [Agent,E] ).
 
 
 % find another oracle that has not been seen yet
@@ -98,6 +86,7 @@ solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
   energy_status( Agent ),
   % retrieve the position of the agent
   query_world(agent_current_position, [Agent, Pos]),
+  % going to unvisited oracle
   solve_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, [] ),
   !,
   reverse( R, [_Init | Route ] ),
@@ -114,17 +103,9 @@ solve_bfs( Task,[H | _],R,CostsBFS,NewPos,_) :-
 
 solve_bfs(Task,[H|Rest],RR,Cost,NewPos,Explored) :-
   H=[c(_, G, P) | RPath],
-  (setof( Connections,find_connected( P,RPath,G,Connections,Explored ),ResultList) -> append( Rest,ResultList,ModifRest );
-   ModifRest=Rest
-  ),
+  (setof( Connections,find_connected( P,RPath,G,Connections,Explored ),ResultList) -> append( Rest,ResultList,ModifRest ); ModifRest=Rest),
   delete_seen( ModifRest,Explored,NewestRest ),
   solve_bfs( Task, NewestRest, RR, Cost, NewPos, [P | Explored]).
-
-
-delete_seen(Rest,[],Rest).
-delete_seen( Rest,[P | Ps],ModifRest ) :-
-  delete( Rest,[c(_,_,P) | _],ModifRest ),
-  delete_seen( ModifRest,Ps, _).
 
 
 find_connected(P,RPath,G,Connections,Explored) :-
@@ -133,6 +114,12 @@ find_connected(P,RPath,G,Connections,Explored) :-
   \+ memberchk(P1,Explored),
   G1 is G+1,
   Connections=[c(G1,G1,P1), P1 | RPath].
+
+
+delete_seen(Rest,[],Rest).
+delete_seen( Rest,[P | Ps],ModifRest ) :-
+  delete( Rest,[c(_,_,P) | _],ModifRest ),
+  delete_seen( ModifRest,Ps, _).
 
 
 
