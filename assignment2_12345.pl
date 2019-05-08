@@ -3,11 +3,11 @@ candidate_number(12345).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 % How to make sure pass all part1 scince no tests are given
 % A* agenda-based search for part1
-% Breadth fisrt search for part3 (shortest path fisrt anwser)
+% Breadth first search for part3 (shortest path first anwser)
 % Always checking energy before moving
 
 
-% Something could be improved:
+% Some that things could be improved:
 % make sure get all marks for part1
 % part2 seems fine
 % part3 needs to be checked as well
@@ -39,13 +39,11 @@ solve_task_part4_o( goto_another_oracle( o(X) ), Cost ) :-
   my_agent( A ),
   % always check energy before a move
   energy_status( A ),
-  query_world( agent_current_position, [A, P]),
-  solve_bfs( goto_another_oracle( o(X) ),
-  [[c( 0, 0, P ), P]], R, Cost, _NewPos, []),
+  query_world( agent_current_position, [A, Pos]),
+  solve_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, []),
   !,
   reverse(R, [_Init | Path] ),
-  robustness( goto_another_oracle( o(X) ), [A, Path] ) ;
-  query_world( agent_do_moves, [A, Path]).
+  robustness( goto_another_oracle( o(X) ), [A, Path] ) ; query_world( agent_do_moves, [A, Path]).
 
 
 % robustness search for part4
@@ -69,7 +67,7 @@ energy_status( A ) :-
 solve_task_o( find( c(X) ), Cost ) :-
   my_agent( Agent ),
   query_world(agent_current_position,[Agent, Pos]),
-  solve_bfs( find(c(X)), [[c(0, 0, Pos), Pos]], R, Cost, _NewPos, []),
+  solve_bfs( find( c(X) ), [[c(0, 0, Pos), Pos]], R, Cost, _NewPos, []),
   !,
   reverse( R, [_Init | Route] ),
   query_world( agent_do_moves, [Agent,Route] ),
@@ -94,15 +92,15 @@ solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
 
 
 
-%%%%%%%%% helper functions
-solve_bfs( Task,[H | _],R,CostsBFS,NewPos,_) :-
-  H = [c(_, G, P) | RPath],
-  CostsBFS = [cost( Cost ), depth( G )],
+%%%%%%%%% helper functions bfs
+solve_bfs( Task,[Curr | _],R,CostsBFS,NewPos,_) :-
+  Curr=[c(_, G, P) | RPath],
+  CostsBFS=[cost( Cost ), depth( G )],
   achieved( Task, [c(G, P) | RPath], R, Cost, NewPos ).
 
 
-solve_bfs(Task,[H|Rest],RR,Cost,NewPos,Explored) :-
-  H=[c(_, G, P) | RPath],
+solve_bfs(Task,[Curr | Rest],RR,Cost,NewPos,Explored) :-
+  Curr=[c(_, G, P) | RPath],
   (setof( Connections,find_connected( P,RPath,G,Connections,Explored ),ResultList) -> append( Rest,ResultList,ModifRest ); ModifRest=Rest),
   delete_seen( ModifRest,Explored,NewestRest ),
   solve_bfs( Task, NewestRest, RR, Cost, NewPos, [P | Explored]).
@@ -200,14 +198,14 @@ achieved(find(O),Current,RPath,Cost,NewPos) :-
 
 %%%  for part3  %%%
 
-achieved(goto_another_oracle(O),Current,RPath,Cost,NewPos) :-
-  my_agent(Agent),
+achieved( goto_another_oracle( O ),Current,RPath,Cost,NewPos ) :-
   Current = [c(Cost,NewPos)|RPath],
+  my_agent(Agent),
   ( O=none    -> true
   ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O),
-  \+ query_world(agent_check_oracle,[Agent, O] ),
+  \+ query_world( agent_check_oracle,[Agent,O] ),
   write("Visiting oracle "),
-  write(O),
+  write( O ),
   nl ).
 
 

@@ -20,14 +20,13 @@ find_wiki_actor( A,ListA ) :-
   include( checking_links(L),ListA,FilterL ),
 
   length( FilterL,Size ),
-  (Size = 1->nth0( 0, FilterL, A ); find_wiki_actor( A, FilterL )).
+  (Size=1->nth0( 0, FilterL, A ); find_wiki_actor( A, FilterL )).
 
 
 checking_links( L,A ) :-
   actor( A ),
   setof(L,(link( L ),wp( A, WT ),wt_link( WT, L )),Ls),
   member( L, Ls ).
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% For part3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
