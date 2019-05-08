@@ -14,6 +14,7 @@ candidate_number(12345).
 % part4 if we have time
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 solve_general( Task, Cost ) :-
   ( part_module(4) -> solve_task_part4_o( Task,Cost ); otherwise -> solve_task_o( Task, Cost ) ).
 
@@ -31,6 +32,7 @@ solve_task( Task,Cost ) :-
   nb_getval( flag,Flag ),
   ( Flag=1 -> reverse( R,[_Init | Path] ), query_world( agent_do_moves,[A, Path] );
   otherwise -> R=[Final | _], solve_task( go( Final ),_) ).
+
 
 %%%%%%%%%%%%%%%%%%
 %%%%%% for part3 %%
@@ -153,25 +155,31 @@ solve_task_A_Star( Task, [Curr | Result], RR, Cost, NewPos, NextConnection) :-
   exclude( memberchk( NextConnection ),ModifResult,NewestResult ), % filter for fails
   solve_task_A_Star( Task,NewestResult,RR,Cost,NewPos,[P | NextConnection] ).
 
-achieved_A_Star( go(Exit), Curr, RPath, Cost, NewPos ) :-
-  Curr=[c(_, Cost, NewPos ) | RPath],
-  ( Exit=none -> true ; otherwise -> memberchk(Exit, RPath) ).
 
 achieved_A_Star( find(O), Curr, RPath, Cost, NewPos ) :-
   Curr=[c(_, Cost, NewPos ) | RPath],
   ( O = none -> true ; otherwise -> memberchk( Final,RPath ), map_adjacent( Final, _,O ) ),
   otherwise -> true.
 
+
+achieved_A_Star( go(Exit), Curr, RPath, Cost, NewPos ) :-
+  Curr=[c(_, Cost, NewPos ) | RPath],
+  ( Exit=none -> true ; otherwise -> memberchk(Exit, RPath) ).
+
+
 get_distance( Position,Target,Length ) :-
   Position=p(X1,Y1), Target=p(X2,Y2),
   Length is abs( X1 - X2 ) + abs( Y1 - Y2 ).
+
 
 search_A_Star( P, N, F1, G1, NextConnection ) :-
   map_adjacent( P, N, empty ), \+ memberchk( N,NextConnection ),
   nb_getval( flag,Flag ),
   (Flag=1 -> b_getval( destination, go( Target ) ),
-  get_distance( N,Target,Length ), H is Length ; otherwise -> H is 0 ),
-  F1 is H + G1.
+  get_distance( N,Target,Length ),
+  L is Length ; otherwise -> L is 0 ),
+  F1 is L + G1.
+
 
 %%%%%%%%%%%%% achieved %%%%%%%%%%
 achieved(go(Exit),Current,RPath,Cost,NewPos) :-
