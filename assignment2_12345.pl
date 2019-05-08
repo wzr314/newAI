@@ -52,8 +52,9 @@ solve_task_part4_o( goto_another_oracle( o(X) ), Cost ) :-
 % robustness search for part4
 robustness( _, [_, [] ] ).
 robustness( Task, [Agent, [Pos|ListMoves] ] ) :-
+  % move each step while search a new path
   (query_world( check_pos, [Pos, empty] ) -> query_world(agent_do_moves, [Agent, [Pos] ]), robustness( Task, [Agent, ListMoves] );
-  otherwise -> solve_task_part4_o( Task, _ ) ).
+  otherwise -> solve_task_part4_o( Task, _ ) ). % blocked
 
 
 %%%%%%%%%%%%%%%%%%
@@ -151,9 +152,9 @@ solve_task_Astar(Task,[Current|Agenda],RR,Cost,NewPos,Closest) :-
   Current = [c(_, G,P)|RPath], G1 is G + 1,
   % add children to the agenda
   (setof([c(F1,G1,Pos1),Pos1|RPath],
-   search_Astar(P,Pos1,F1,G1,Closest), Children)
+   search_Astar(P,Pos1,F1,G1,Closest), Children) % search adjacent
   -> merge(Agenda, Children, NewAgenda);NewAgenda = Agenda),
-  exclude( memberchk(Closest), NewAgenda, FinalAgenda),
+  exclude( memberchk(Closest), NewAgenda, FinalAgenda), % filter
   solve_task_Astar(Task, FinalAgenda, RR, Cost, NewPos, [P | Closest]).
 
 
