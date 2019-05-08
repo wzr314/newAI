@@ -11,16 +11,16 @@ find_identity(A):-
 
 
 find_identity_2( A ):-
-  findall( Actor, actor( Actor ), ListA ),
-  find_actor_wiki( A, ListA ).
+  findall( A, actor( A ), ListA ),
+  find_wiki_actor( A, ListA ).
 
 
-find_actor_wiki( A, ListA ) :-
+find_wiki_actor( A, ListA ) :-
   agent_ask_oracle( oscar, o(1), link, L ),
   include( check_links(L), ListA, FilterL ),
 
   length( FilterL, Size ),
-  (Size = 1->nth0( 0, FilterL, A ); find_actor_wiki( A, FilterL )).
+  (Size = 1->nth0( 0, FilterL, A ); find_wiki_actor( A, FilterL )).
 
 
 check_links(Link, A) :-
@@ -62,14 +62,15 @@ check_links(Link, A) :-
 %%
 
 find_identity_o(A):-
-  findall(Actor, actor(Actor), Actors),
-  find_actor_identity_o(A, Actors).
+  findall(A, actor(A), ListA),
+  find_wiki_actor_o(A, ListA).
 
 
-find_actor_identity_o(A, Actors) :-
-  solve_general(goto_another_oracle(o(X)), _),
-  my_agent(Agent),
-  query_world( agent_ask_oracle, [Agent, o(X), link, L]),
-  include(check_links( L ), Actors, NewActors),
-  length(NewActors, Size),
-  ( Size = 1 -> nth0(0, NewActors, A); find_actor_identity_o(A, NewActors)).
+find_wiki_actor_o(A, ListA) :-
+  solve_general( goto_another_oracle( o(X) ), _ ),
+  my_agent( Agent ),
+  query_world(agent_ask_oracle,[Agent,o(X),link,L] ),
+  include( check_links( L ),ListA,FilterL ),
+  length( FilterL,Size),
+  (Size=1 ->nth0(0,FilterL,A);
+  find_wiki_actor_o( A,FilterL ) ).

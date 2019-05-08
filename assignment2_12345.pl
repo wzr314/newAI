@@ -29,6 +29,7 @@ solve_task(Task,Cost) :-
   my_agent(A),
   energy_status(A), % cheking energy
   query_world( agent_current_position, [A,P] ),
+
   solve_task_Astar(Task, [[c(0, 0, P), P]], R, Cost, _NewPos, []),!,
   nb_getval(flag, Flag),
   ( Flag = 1 -> reverse( R, [_Init | Path]),
@@ -65,51 +66,55 @@ robustness( Task, [Agent, [H|T] ] ) :-
 %%%%%%%%%%%%%%%%%%
 %% for part3 %%
 
-% checking, set the lowest energy here
+% set the lowest allowed energy here
 energy_status( A ) :-
   query_world( agent_current_energy,[A, E] ),
   % set energy threshold here
-  (E>50->true; otherwise->solve_task_o(find(c(_)), _)). %if lower than 50, go charge first
+  (E>50->true; otherwise->solve_task_o(find(c(_)), _)).   % if lower than 50, go charge first
 
 
 % in case you run out of energy
 solve_task_o( find( c(X) ), Cost ) :-
   my_agent( Agent ),
-  query_world(agent_current_position,[Agent, P]),
-  solve_bfs( find(c(X)), [[c(0, 0, P), P]],
+  query_world(agent_current_position,[Agent, Pos]),
+  solve_bfs( find(c(X)), [[c(0, 0, Pos), Pos]],
   R, Cost, _NewPos, []),
   !,
-  reverse( R, [_Init | Path] ),
-  query_world( agent_do_moves, [Agent,Path] ),
+  reverse( R, [_Init | Route] ),
+  query_world( agent_do_moves, [Agent,Route] ),
+  % agent has to top up
   query_world(agent_topup_energy, [Agent,c(X)] ),
+  % ask agent for the new energy status
   query_world( agent_current_energy, [Agent,E] ),
-  write("Finished topop, current energy is "),
-  write(E),
+  write( "Charging, new energy is " ),
+  write( E ),
   nl.
 
 
-% find next oracle
+% find another oracle that has not been seen yet
 solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
   my_agent( Agent ),
+  % see if needs to top up
   energy_status( Agent ),
+  % retrieve the position of the agent
   query_world(agent_current_position, [Agent, Pos]),
   solve_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, [] ),
   !,
-  reverse( R, [_Init | Path ] ),
-  query_world(agent_do_moves,[Agent, Path]).
+  reverse( R, [_Init | Route ] ),
+  query_world(agent_do_moves,[Agent, Route]).
 
 
 
 %%%%%%%%% helper functions
-solve_bfs( Task,[Current | _],R,CostsBFS,NewPos,_) :-
-  Current = [c(_, G, P) | RPath],
+solve_bfs( Task,[H | _],R,CostsBFS,NewPos,_) :-
+  H = [c(_, G, P) | RPath],
   CostsBFS = [cost( Cost ), depth( G )],
   achieved( Task, [c(G, P) | RPath], R, Cost, NewPos ).
 
 
-solve_bfs(Task,[Current|Rest],RR,Cost,NewPos,Explored):-
-  Current=[c(_, G, P) | RPath],
-  (setof( Child,findChild( P,RPath,G,Child,Explored ),AllFoundChild) -> append( Rest,AllFoundChild,ModifRest );
+solve_bfs(Task,[H|Rest],RR,Cost,NewPos,Explored) :-
+  H=[c(_, G, P) | RPath],
+  (setof( Connections,find_connected( P,RPath,G,Connections,Explored ),ResultList) -> append( Rest,ResultList,ModifRest );
    ModifRest=Rest
   ),
   delete_seen( ModifRest,Explored,NewestRest ),
@@ -122,12 +127,12 @@ delete_seen( Rest,[P | Ps],ModifRest ) :-
   delete_seen( ModifRest,Ps, _).
 
 
-findChild(P,RPath,G,Child,Explored) :-
+find_connected(P,RPath,G,Connections,Explored) :-
   search(P,P1,R,_),
   \+ memberchk(R,RPath),    % check we have not been here already
   \+ memberchk(P1,Explored),
   G1 is G+1,
-  Child=[c(G1,G1,P1), P1 | RPath].
+  Connections=[c(G1,G1,P1), P1 | RPath].
 
 
 
@@ -155,10 +160,9 @@ solve_task_Astar(Task,[Current|Agenda],RR,Cost,NewPos,Closest) :-
   % add children to the agenda
   (setof([c(F1,G1,Pos1),Pos1|RPath],
    search_Astar(P,Pos1,F1,G1,Closest), Children)
-  -> merge(Agenda, Children, NewAgenda);NewAgenda = Agenda
-  ),
+  -> merge(Agenda, Children, NewAgenda);NewAgenda = Agenda),
   exclude( memberchk(Closest), NewAgenda, FinalAgenda),
-  solve_task_Astar(Task,FinalAgenda,RR,Cost,NewPos,[P|Closest]).
+  solve_task_Astar(Task, FinalAgenda, RR, Cost, NewPos, [P | Closest]).
 
 
 achieved_Astar(go(Exit),Current,RPath,Cost,NewPos) :-
@@ -215,7 +219,7 @@ achieved(goto_another_oracle(O),Current,RPath,Cost,NewPos) :-
   ( O=none    -> true
   ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O),
   \+ query_world(agent_check_oracle,[Agent, O] ),
-  write(" Visited oracle "),
+  write("Visiting oracle "),
   write(O),
   nl ).
 
