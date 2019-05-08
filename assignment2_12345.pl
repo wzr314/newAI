@@ -17,6 +17,7 @@ candidate_number(12345).
 solve_general( Task, Cost ) :-
   ( part_module(4) -> solve_task_part4_o( Task,Cost ); otherwise -> solve_task_o( Task, Cost ) ).
 
+
 solve_task( Task, Cost ) :-
   b_setval(destination,Task),
   ( Task = go(_) -> nb_setval(flag, 1);
@@ -41,6 +42,7 @@ energy_status( A ) :-
   % set energy threshold here
   (E>50 -> true ; otherwise -> solve_task_o( find( c(_) ), _) ).   % if lower than 50, go charge first
 
+
 % in case you run out of energy
 solve_task_o( find( c(X) ), Cost ) :-
   my_agent( Agent ),
@@ -55,6 +57,7 @@ solve_task_o( find( c(X) ), Cost ) :-
   % agent increases energy level
   query_world(agent_topup_energy, [Agent,c(X)] ).
 
+
 % find another oracle that has not been seen yet
 solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
   my_agent( Agent ),
@@ -68,6 +71,7 @@ solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
   reverse( R, [_Init | Route ] ),
   % going to unvisited oracle
   query_world(agent_do_moves,[Agent, Route]).
+
 
 %%%%%%%%% helper functions bfs
 go_bfs( Task,[Curr | _],R,CostsBFS,NewPos,_) :-
@@ -92,12 +96,14 @@ find_connected(P,RPath,G,Connections,Explored) :-
   % list of connections
   Connections=[c(G1,G1,P1), P1 | RPath].
 
+
 delete_seen(Rest,[],Rest).
 delete_seen( Rest,[P | Ps],ModifRest ) :-
   delete( Rest,[c(_,_,P) | _],ModifRest ),
   delete_seen( ModifRest,Ps, _).
 
-%% for part4 %%
+
+%%%%%%%%%%% for part4 %%%%%%%
 solve_task_part4_o( goto_another_oracle( o(X) ), Cost ) :-
   my_agent( A ),
   % see if needs to top up
@@ -117,9 +123,8 @@ robustness( _, [_, [] ] ).
 robustness( Task, [Agent, [Pos|ListMoves] ] ) :-
   % move each step while search a new path
   (query_world( check_pos, [Pos, empty] ) -> query_world(agent_do_moves, [Agent, [Pos] ]), robustness( Task, [Agent, ListMoves] );
-  otherwise -> write("World is charging fast, I'm finding another path!!"),
-  nl,
-  solve_task_part4_o( Task, _ ) ). % blocked
+  otherwise -> solve_task_part4_o( Task, _ ) ).    % find another route
+
 
 %%%%%%%%%% Useful predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% backtracking depth-first search, needs to be changed to agenda-based A*
@@ -141,14 +146,14 @@ solve_task_A_Star(Task, [Current|_], RPath, Cost, NewPos, _):-
   achieved_A_Star(Task,Current,RPath,Cost,NewPos).
 
 
-solve_task_A_Star(Task,[Current|Agenda],RR,Cost,NewPos,Closest) :-
+solve_task_A_Star(Task,[Current|Result],RR,Cost,NewPos,Closest) :-
   Current = [c(_, G,P)|RPath], G1 is G + 1,
   % add children to the agenda
   (setof([c(F1,G1,Pos1),Pos1|RPath],
-   search_A_Star(P,Pos1,F1,G1,Closest), Children) % search adjacent
-  -> merge(Agenda, Children, NewAgenda);NewAgenda = Agenda),
-  exclude( memberchk(Closest), NewAgenda, FinalAgenda), % filter
-  solve_task_A_Star(Task, FinalAgenda, RR, Cost, NewPos, [P | Closest]).
+   search_A_Star(P,Pos1,F1,G1,Closest), Connection) % search adjacent
+  -> merge(Result, Connection, ModifResult); ModifResult=Result),
+  exclude( memberchk(Closest), ModifResult, NewestResult), % filter
+  solve_task_A_Star(Task, NewestResult, RR, Cost, NewPos, [P | Closest]).
 
 achieved_A_Star(go(Exit),Current,RPath,Cost,NewPos) :-
   Current = [c(_,Cost,NewPos)|RPath],
@@ -202,6 +207,7 @@ achieved( goto_another_oracle( O ),Curr,RPath,Cost,NewPos ) :-
   write("Visiting oracle "),
   write( O ),
   nl ).
+
 
 search(F,N,N,1) :-
   map_adjacent(F,N,empty).
