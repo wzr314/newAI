@@ -12,24 +12,30 @@ find_identity(A) :-
 
 find_identity_2( A ) :-
   findall( A,actor( A ),ListA ),
+  % another function to call bkt
   find_wiki_actor( A,ListA ).
 
 
 find_wiki_actor( A,ListA ) :-
   agent_ask_oracle( oscar,o(1),link,L ),
+  % get the list of actors using links
   include( checking_links(L),ListA,FilterL ),
-
+  % get size of the new list
   length( FilterL,Size ),
+  % checking all elements of the filtered list until we find a result
   (Size=1->nth0( 0, FilterL, A ); find_wiki_actor( A, FilterL )).
 
 
 checking_links( L,A ) :-
   actor( A ),
+  % sort the result
   setof(L,(link( L ),wp( A, WT ),wt_link( WT, L )),Ls),
+  % check if L is a member of Ls
   member( L, Ls ).
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% For part3 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% just draft
 %find_identity_o(A):-
 %  generate_actor_link_list(ActorList),
 %  my_agent(Agent),
@@ -63,15 +69,20 @@ checking_links( L,A ) :-
 
 find_identity_o( A ) :-
   findall( A,actor( A ),ListA),
+  % another function to call bkt
   find_wiki_actor_o( A,ListA ).
 
 
 find_wiki_actor_o( A,ListA ) :-
+  % integrate part4
   solve_general( goto_another_oracle( o(X) ), _ ),
   my_agent( Agent ),
   % trying to find the identity
   query_world(agent_ask_oracle,[Agent,o(X),link,L] ),
+  % get the list of actors using links
   include( checking_links( L ),ListA,FilterL ),
+  % get size of the filtered list
   length( FilterL,Size),
+  % checking all elements of the filtered list until we find a result
   (Size=1 ->nth0(0,FilterL,A);
   find_wiki_actor_o( A,FilterL ) ).

@@ -12,11 +12,11 @@ candidate_number(12345).
 % part2 seems fine
 % part3 needs to be checked as well
 % part4 if we have time
-%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 solve_general( Task, Cost ) :-
-  ( part_module(4) -> solve_task_part4_o( Task,Cost ) ; otherwise -> solve_task_o( Task, Cost ) ).
+  ( part_module(4) -> solve_task_part4_o( Task,Cost ); otherwise -> solve_task_o( Task, Cost ) ).
 
 
 solve_task( Task, Cost ) :-
@@ -41,10 +41,11 @@ solve_task_part4_o( goto_another_oracle( o(X) ), Cost ) :-
   energy_status( A ),
   % retrieve the position of the agent
   query_world( agent_current_position, [A, Pos]),
-  % going to unvisited oracle
+  % find unvisited oracle
   go_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, []),
   !,
   reverse(R, [_Init | Route] ),
+  % going to unvisited oracle
   robustness( goto_another_oracle( o(X) ), [A, Route] ) ; query_world( agent_do_moves, [A, Route]).
 
 
@@ -70,11 +71,13 @@ solve_task_o( find( c(X) ), Cost ) :-
   my_agent( Agent ),
   % retrieve the position of the agent
   query_world(agent_current_position,[Agent, Pos]),
+  % find a charging station using bfs
   go_bfs( find( c(X) ), [[c(0, 0, Pos), Pos]], R, Cost, _NewPos, []),
   !,
   reverse( R, [_Init | Route] ),
+  % go to top up
   query_world( agent_do_moves, [Agent,Route] ),
-  % agent has to increase energy level
+  % agent increases energy level
   query_world(agent_topup_energy, [Agent,c(X)] ).
 
 
@@ -85,10 +88,11 @@ solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
   energy_status( Agent ),
   % retrieve the position of the agent
   query_world(agent_current_position, [Agent, Pos]),
-  % going to unvisited oracle
+  % find unvisited oracle
   go_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, [] ),
   !,
   reverse( R, [_Init | Route ] ),
+  % going to unvisited oracle
   query_world(agent_do_moves,[Agent, Route]).
 
 
@@ -96,6 +100,7 @@ solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
 %%%%%%%%% helper functions bfs
 go_bfs( Task,[Curr | _],R,CostsBFS,NewPos,_) :-
   Curr=[c(_, G, P) | RPath],
+  % check the costs
   CostsBFS=[cost( Cost ), depth( G )],
   achieved( Task, [c(G, P) | RPath], R, Cost, NewPos ).
 
@@ -112,6 +117,7 @@ find_connected(P,RPath,G,Connections,Explored) :-
   \+ memberchk(R,RPath),    % check we have not been here already
   \+ memberchk(P1,Explored),
   G1 is G+1,
+  % list of connections
   Connections=[c(G1,G1,P1), P1 | RPath].
 
 
@@ -205,6 +211,7 @@ achieved( goto_another_oracle( O ),Curr,RPath,Cost,NewPos ) :-
   ( O=none    -> true
   ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O),
   \+ query_world( agent_check_oracle,[Agent,O] ),
+  % printing
   write("Visiting oracle "),
   write( O ),
   nl ).
