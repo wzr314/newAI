@@ -37,13 +37,15 @@ solve_task( Task, Cost ) :-
 
 solve_task_part4_o( goto_another_oracle( o(X) ), Cost ) :-
   my_agent( A ),
-  % always check energy before a move
+  % see if needs to top up
   energy_status( A ),
+  % retrieve the position of the agent
   query_world( agent_current_position, [A, Pos]),
-  solve_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, []),
+  % going to unvisited oracle
+  go_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, []),
   !,
-  reverse(R, [_Init | Path] ),
-  robustness( goto_another_oracle( o(X) ), [A, Path] ) ; query_world( agent_do_moves, [A, Path]).
+  reverse(R, [_Init | Route] ),
+  robustness( goto_another_oracle( o(X) ), [A, Route] ) ; query_world( agent_do_moves, [A, Route]).
 
 
 % robustness search for part4
@@ -66,15 +68,14 @@ energy_status( A ) :-
 % in case you run out of energy
 solve_task_o( find( c(X) ), Cost ) :-
   my_agent( Agent ),
+  % retrieve the position of the agent
   query_world(agent_current_position,[Agent, Pos]),
-  solve_bfs( find( c(X) ), [[c(0, 0, Pos), Pos]], R, Cost, _NewPos, []),
+  go_bfs( find( c(X) ), [[c(0, 0, Pos), Pos]], R, Cost, _NewPos, []),
   !,
   reverse( R, [_Init | Route] ),
   query_world( agent_do_moves, [Agent,Route] ),
-  % agent has to top up
-  query_world(agent_topup_energy, [Agent,c(X)] ),
-  % ask agent for the new energy status
-  query_world( agent_current_energy, [Agent,E] ).
+  % agent has to increase energy level
+  query_world(agent_topup_energy, [Agent,c(X)] ).
 
 
 % find another oracle that has not been seen yet
@@ -85,7 +86,7 @@ solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
   % retrieve the position of the agent
   query_world(agent_current_position, [Agent, Pos]),
   % going to unvisited oracle
-  solve_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, [] ),
+  go_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, [] ),
   !,
   reverse( R, [_Init | Route ] ),
   query_world(agent_do_moves,[Agent, Route]).
@@ -93,17 +94,17 @@ solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
 
 
 %%%%%%%%% helper functions bfs
-solve_bfs( Task,[Curr | _],R,CostsBFS,NewPos,_) :-
+go_bfs( Task,[Curr | _],R,CostsBFS,NewPos,_) :-
   Curr=[c(_, G, P) | RPath],
   CostsBFS=[cost( Cost ), depth( G )],
   achieved( Task, [c(G, P) | RPath], R, Cost, NewPos ).
 
 
-solve_bfs(Task,[Curr | Rest],RR,Cost,NewPos,Explored) :-
+go_bfs(Task,[Curr | Rest],RR,Cost,NewPos,Explored) :-
   Curr=[c(_, G, P) | RPath],
   (setof( Connections,find_connected( P,RPath,G,Connections,Explored ),ResultList) -> append( Rest,ResultList,ModifRest ); ModifRest=Rest),
   delete_seen( ModifRest,Explored,NewestRest ),
-  solve_bfs( Task, NewestRest, RR, Cost, NewPos, [P | Explored]).
+  go_bfs( Task, NewestRest, RR, Cost, NewPos, [P | Explored]).
 
 
 find_connected(P,RPath,G,Connections,Explored) :-
@@ -171,10 +172,10 @@ manhattan_distance(Pos, Goal, Distance):-
 
 
 search_Astar(P,N,F1,G1,Closest):-
-  map_adjacent(P,N,empty), \+ memberchk(N,Closest),
+  map_adjacent(P,N,empty), \+ memberchk(N, Closest),
   nb_getval(flag, Flag),
-  ( Flag = 1 -> b_getval( destination, go(Goal)),
-    manhattan_distance( N, Goal, Distance), H is Distance;
+  ( Flag = 1 -> b_getval( destination, go( Goal ) ),
+    manhattan_distance( N,Goal,Distance ), H is Distance;
     otherwise -> H is 0
   ),
   F1 is H + G1.
@@ -198,9 +199,9 @@ achieved(find(O),Current,RPath,Cost,NewPos) :-
 
 %%%  for part3  %%%
 
-achieved( goto_another_oracle( O ),Current,RPath,Cost,NewPos ) :-
-  Current = [c(Cost,NewPos)|RPath],
-  my_agent(Agent),
+achieved( goto_another_oracle( O ),Curr,RPath,Cost,NewPos ) :-
+  Curr = [c( Cost, NewPos ) | RPath],
+  my_agent( Agent ),
   ( O=none    -> true
   ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O),
   \+ query_world( agent_check_oracle,[Agent,O] ),
