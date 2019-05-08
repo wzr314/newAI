@@ -150,6 +150,7 @@ solve_task_bt(Task,Current,D,RR,Cost,NewPos) :-
 solve_task_A_Star(Task, [Current|_], RPath, Cost, NewPos, _):-
   achieved_A_Star(Task,Current,RPath,Cost,NewPos).
 
+
 solve_task_A_Star(Task,[Current|Agenda],RR,Cost,NewPos,Closest) :-
   Current = [c(_, G,P)|RPath], G1 is G + 1,
   % add children to the agenda
@@ -158,7 +159,6 @@ solve_task_A_Star(Task,[Current|Agenda],RR,Cost,NewPos,Closest) :-
   -> merge(Agenda, Children, NewAgenda);NewAgenda = Agenda),
   exclude( memberchk(Closest), NewAgenda, FinalAgenda), % filter
   solve_task_A_Star(Task, FinalAgenda, RR, Cost, NewPos, [P | Closest]).
-
 
 achieved_A_Star(go(Exit),Current,RPath,Cost,NewPos) :-
   Current = [c(_,Cost,NewPos)|RPath],
@@ -174,11 +174,9 @@ achieved_A_Star(find(O),Current,RPath,Cost,NewPos) :-
   ),
   otherwise -> true.
 
-
 manhattan_distance(Pos, Goal, Distance):-
   Pos = p(X1,Y1), Goal = p(X2,Y2),
   Distance is abs(X1-X2) + abs(Y1-Y2).
-
 
 search_A_Star(P,N,F1,G1,Closest):-
   map_adjacent(P,N,empty), \+ memberchk(N, Closest),
@@ -189,22 +187,18 @@ search_A_Star(P,N,F1,G1,Closest):-
   ),
   F1 is H + G1.
 
-
 %%%%%%%%%%%%% achieved %%%%%%%%%%
-
 achieved(go(Exit),Current,RPath,Cost,NewPos) :-
   Current = [c(Cost,NewPos)|RPath],
   ( Exit=none -> true
   ; otherwise -> RPath = [Exit|_]
   ).
 
-
 achieved(find(O),Current,RPath,Cost,NewPos) :-
   Current = [c(Cost,NewPos)|RPath],
   ( O=none    -> true
   ; otherwise -> RPath = [Last|_], map_adjacent(Last,_,O)
   ).
-
 
 %%%  for part3  %%%
 
@@ -218,7 +212,6 @@ achieved( goto_another_oracle( O ),Curr,RPath,Cost,NewPos ) :-
   write("Visiting oracle "),
   write( O ),
   nl ).
-
 
 search(F,N,N,1) :-
   map_adjacent(F,N,empty).
