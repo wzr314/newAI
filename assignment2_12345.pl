@@ -124,7 +124,9 @@ robustness( _, [_, [] ] ).
 robustness( Task, [Agent, [Pos|ListMoves] ] ) :-
   % move each step while search a new path
   (query_world( check_pos, [Pos, empty] ) -> query_world(agent_do_moves, [Agent, [Pos] ]), robustness( Task, [Agent, ListMoves] );
-  otherwise -> solve_task_part4_o( Task, _ ) ).    % find another route
+  otherwise -> solve_task_part4_o( Task, _ ),
+  write("World is charging fast, I'm finding another route!!"),
+  nl ).    % find another route
 
 
 %%%%%%%%%% Useful predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
