@@ -142,34 +142,28 @@ solve_task_bt(Task,Current,D,RR,Cost,NewPos) :-
 
 
 %%%% Agenda based A star %%%%%%%%%%%%%%%%%%%%%
-solve_task_A_Star(Task, [Current|_], RPath, Cost, NewPos, _):-
-  achieved_A_Star(Task,Current,RPath,Cost,NewPos).
+solve_task_A_Star( Task,[Curr | _],RPath,Cost,NewPos, _ ) :-
+  achieved_A_Star( Task, Curr, RPath, Cost, NewPos ).
 
 
-solve_task_A_Star(Task,[Current|Result],RR,Cost,NewPos,Closest) :-
-  Current = [c(_, G,P)|RPath], G1 is G + 1,
-  % add children to the agenda
-  (setof([c(F1,G1,Pos1),Pos1|RPath],
-   search_A_Star(P,Pos1,F1,G1,Closest), Connection) % search adjacent
-  -> merge(Result, Connection, ModifResult); ModifResult=Result),
-  exclude( memberchk(Closest), ModifResult, NewestResult), % filter
-  solve_task_A_Star(Task, NewestResult, RR, Cost, NewPos, [P | Closest]).
+solve_task_A_Star( Task, [Curr | Result], RR, Cost, NewPos, Closest) :-
+  Curr=[c(_, G, P) | RPath], G1 is G + 1,
+  % add child to the agenda
+  (setof([c(F1, G1, Pos1) , Pos1 | RPath], search_A_Star( P, Pos1, F1, G1, Closest ), Connection) % search adjacent
+  -> merge( Result, Connection, ModifResult ); ModifResult=Result),
+  exclude( memberchk( Closest ),ModifResult,NewestResult ), % filter
+  solve_task_A_Star( Task,NewestResult,RR,Cost,NewPos,[P | Closest] ).
 
-achieved_A_Star(go(Exit),Current,RPath,Cost,NewPos) :-
-  Current = [c(_,Cost,NewPos)|RPath],
-  ( Exit=none -> true
-  ; otherwise -> memberchk(Exit, RPath)
-  ).
+achieved_A_Star( go(Exit), Curr, RPath, Cost, NewPos ) :-
+  Curr=[c(_, Cost, NewPos ) | RPath],
+  ( Exit=none -> true ; otherwise -> memberchk(Exit, RPath) ).
 
-achieved_A_Star(find(O),Current,RPath,Cost,NewPos) :-
-  Current = [c(_,Cost,NewPos)|RPath],
-  ( O=none    -> true
-  ; otherwise -> memberchk(Last, RPath),
-  map_adjacent( Last, _, O)
-  ),
+achieved_A_Star( find(O), Curr, RPath, Cost, NewPos ) :-
+  Curr=[c(_, Cost, NewPos ) | RPath],
+  ( O = none -> true ; otherwise -> memberchk( Last,RPath ), map_adjacent( Last, _,O ) ),
   otherwise -> true.
 
-manhattan_distance(Pos, Goal, Distance):-
+get_distance(Pos, Goal, Distance):-
   Pos = p(X1,Y1), Goal = p(X2,Y2),
   Distance is abs(X1-X2) + abs(Y1-Y2).
 
@@ -177,7 +171,7 @@ search_A_Star(P,N,F1,G1,Closest):-
   map_adjacent(P,N,empty), \+ memberchk(N, Closest),
   nb_getval(flag, Flag),
   ( Flag = 1 -> b_getval( destination, go( Goal ) ),
-    manhattan_distance( N,Goal,Distance ), H is Distance;
+    get_distance( N,Goal,Distance ), H is Distance;
     otherwise -> H is 0
   ),
   F1 is H + G1.
