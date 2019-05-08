@@ -163,17 +163,15 @@ achieved_A_Star( find(O), Curr, RPath, Cost, NewPos ) :-
   ( O = none -> true ; otherwise -> memberchk( Last,RPath ), map_adjacent( Last, _,O ) ),
   otherwise -> true.
 
-get_distance( Pos,Target,Distance ):-
+get_distance( Pos,Target,Length ) :-
   Pos=p(X1,Y1), Target=p(X2,Y2),
-  Distance is abs( X1 - X2 ) + abs( Y1 - Y2 ).
+  Length is abs( X1 - X2 ) + abs( Y1 - Y2 ).
 
-search_A_Star(P,N,F1,G1,Closest):-
-  map_adjacent(P,N,empty), \+ memberchk(N, Closest),
-  nb_getval(flag, Flag),
-  ( Flag = 1 -> b_getval( destination, go( Target ) ),
-    get_distance( N,Target,Distance ), H is Distance;
-    otherwise -> H is 0
-  ),
+search_A_Star( P, N, F1, G1, Closest ) :-
+  map_adjacent( P, N, empty ), \+ memberchk( N,Closest ),
+  nb_getval( flag,Flag ),
+  (Flag=1 -> b_getval( destination, go( Target ) ),
+  get_distance( N,Target,Length ), H is Length ; otherwise -> H is 0 ),
   F1 is H + G1.
 
 %%%%%%%%%%%%% achieved %%%%%%%%%%
