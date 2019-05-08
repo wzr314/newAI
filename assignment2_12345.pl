@@ -89,13 +89,13 @@ go_bfs(Task,[Curr | Rest],RR,Cost,NewPos,Explored) :-
   go_bfs( Task, NewestRest, RR, Cost, NewPos, [P | Explored]).
 
 
-find_connected(P,RPath,G,Connections,Explored) :-
+find_connected(P,RPath,B,Connections,Explored) :-
   search(P,P1,R,_),
   \+ memberchk(R,RPath),    % check we have not been here already
   \+ memberchk(P1,Explored),
-  G1 is G+1,
+  B1 is B+1,
   % list of connections
-  Connections=[c(G1,G1,P1), P1 | RPath].
+  Connections=[c(B1,B1,P1), P1 | RPath].
 
 
 delete_seen(Rest,[],Rest).
@@ -148,9 +148,9 @@ solve_task_A_Star( Task,[Curr | _],RPath,Cost,NewPos, _ ) :-
 
 
 solve_task_A_Star( Task, [Curr | Result], RR, Cost, NewPos, NextConnection) :-
-  Curr=[c(_, G, P) | RPath], G1 is G + 1,
+  Curr=[c(_, B, P) | RPath], B1 is B + 1,
   % add child to the agenda
-  (setof([c(F1, G1, Pos1) , Pos1 | RPath], search_A_Star( P, Pos1, F1, G1, NextConnection ), Connection) % search adjacent
+  (setof([c(D1, B1, Pos1) , Pos1 | RPath], search_A_Star( P, Pos1, D1, B1, NextConnection ), Connection) % search adjacent
   -> merge( Result, Connection, ModifResult ); ModifResult=Result),
   exclude( memberchk( NextConnection ),ModifResult,NewestResult ), % filter for fails
   solve_task_A_Star( Task,NewestResult,RR,Cost,NewPos,[P | NextConnection] ).
@@ -172,13 +172,13 @@ get_distance( Position,Target,Length ) :-
   Length is abs( X1 - X2 ) + abs( Y1 - Y2 ).
 
 
-search_A_Star( P, N, F1, G1, NextConnection ) :-
+search_A_Star( P, N, D1, B1, NextConnection ) :-
   map_adjacent( P, N, empty ), \+ memberchk( N,NextConnection ),
   nb_getval( flag,Flag ),
   (Flag=1 -> b_getval( destination, go( Target ) ),
   get_distance( N,Target,Length ),
   L is Length ; otherwise -> L is 0 ),
-  F1 is L + G1.
+  D1 is L + B1.
 
 
 %%%%%%%%%%%%% achieved %%%%%%%%%%
