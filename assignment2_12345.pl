@@ -14,10 +14,8 @@ candidate_number(12345).
 % part4 if we have time
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 solve_general( Task, Cost ) :-
   ( part_module(4) -> solve_task_part4_o( Task,Cost ); otherwise -> solve_task_o( Task, Cost ) ).
-
 
 solve_task( Task, Cost ) :-
   b_setval(destination,Task),
@@ -34,31 +32,6 @@ solve_task( Task, Cost ) :-
     query_world( agent_do_moves, [A,Path] );
     otherwise -> R = [Last|_], solve_task( go(Last),_) ).
 
-
-solve_task_part4_o( goto_another_oracle( o(X) ), Cost ) :-
-  my_agent( A ),
-  % see if needs to top up
-  energy_status( A ),
-  % retrieve the position of the agent
-  query_world( agent_current_position, [A, Pos]),
-  % find unvisited oracle
-  go_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, []),
-  !,
-  reverse(R, [_Init | Route] ),
-  % going to unvisited oracle
-  robustness( goto_another_oracle( o(X) ), [A, Route] ) ; query_world( agent_do_moves, [A, Route]).
-
-
-% robustness search for part4
-robustness( _, [_, [] ] ).
-robustness( Task, [Agent, [Pos|ListMoves] ] ) :-
-  % move each step while search a new path
-  (query_world( check_pos, [Pos, empty] ) -> query_world(agent_do_moves, [Agent, [Pos] ]), robustness( Task, [Agent, ListMoves] );
-  otherwise -> write("World is charging fast, I'm finding another path!!"),
-  nl,
-  solve_task_part4_o( Task, _ ) ). % blocked
-
-
 %%%%%%%%%%%%%%%%%%
 %% for part3 %%
 
@@ -67,7 +40,6 @@ energy_status( A ) :-
   query_world( agent_current_energy,[A, E] ),
   % set energy threshold here
   (E>50 -> true ; otherwise -> solve_task_o( find( c(_) ), _) ).   % if lower than 50, go charge first
-
 
 % in case you run out of energy
 solve_task_o( find( c(X) ), Cost ) :-
@@ -83,7 +55,6 @@ solve_task_o( find( c(X) ), Cost ) :-
   % agent increases energy level
   query_world(agent_topup_energy, [Agent,c(X)] ).
 
-
 % find another oracle that has not been seen yet
 solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
   my_agent( Agent ),
@@ -97,8 +68,6 @@ solve_task_o( goto_another_oracle( o(X) ), Cost ) :-
   reverse( R, [_Init | Route ] ),
   % going to unvisited oracle
   query_world(agent_do_moves,[Agent, Route]).
-
-
 
 %%%%%%%%% helper functions bfs
 go_bfs( Task,[Curr | _],R,CostsBFS,NewPos,_) :-
@@ -123,13 +92,34 @@ find_connected(P,RPath,G,Connections,Explored) :-
   % list of connections
   Connections=[c(G1,G1,P1), P1 | RPath].
 
-
 delete_seen(Rest,[],Rest).
 delete_seen( Rest,[P | Ps],ModifRest ) :-
   delete( Rest,[c(_,_,P) | _],ModifRest ),
   delete_seen( ModifRest,Ps, _).
 
+%% for part4 %%
+solve_task_part4_o( goto_another_oracle( o(X) ), Cost ) :-
+  my_agent( A ),
+  % see if needs to top up
+  energy_status( A ),
+  % retrieve the position of the agent
+  query_world( agent_current_position, [A, Pos]),
+  % find unvisited oracle
+  go_bfs( goto_another_oracle( o(X) ), [[c( 0, 0, Pos ), Pos]], R, Cost, _NewPos, []),
+  !,
+  reverse(R, [_Init | Route] ),
+  % going to unvisited oracle
+  robustness( goto_another_oracle( o(X) ), [A, Route] ) ; query_world( agent_do_moves, [A, Route]).
 
+
+% robustness search for part4
+robustness( _, [_, [] ] ).
+robustness( Task, [Agent, [Pos|ListMoves] ] ) :-
+  % move each step while search a new path
+  (query_world( check_pos, [Pos, empty] ) -> query_world(agent_do_moves, [Agent, [Pos] ]), robustness( Task, [Agent, ListMoves] );
+  otherwise -> write("World is charging fast, I'm finding another path!!"),
+  nl,
+  solve_task_part4_o( Task, _ ) ). % blocked
 
 %%%%%%%%%% Useful predicates %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% backtracking depth-first search, needs to be changed to agenda-based A*
