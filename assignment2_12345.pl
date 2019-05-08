@@ -28,7 +28,7 @@ solve_task( Task, Cost ) :-
   energy_status(A), % cheking energy
   query_world( agent_current_position, [A,P] ),
 
-  solve_task_Astar(Task, [[c(0, 0, P), P]], R, Cost, _NewPos, []),!,
+  solve_task_A_Star(Task, [[c(0, 0, P), P]], R, Cost, _NewPos, []),!,
   nb_getval(flag, Flag),
   ( Flag = 1 -> reverse( R, [_Init | Path]),
     query_world( agent_do_moves, [A,Path] );
@@ -54,7 +54,9 @@ robustness( _, [_, [] ] ).
 robustness( Task, [Agent, [Pos|ListMoves] ] ) :-
   % move each step while search a new path
   (query_world( check_pos, [Pos, empty] ) -> query_world(agent_do_moves, [Agent, [Pos] ]), robustness( Task, [Agent, ListMoves] );
-  otherwise -> solve_task_part4_o( Task, _ ) ). % blocked
+  otherwise -> write("World is charging fast, I'm finding another path!!"),
+  nl,
+  solve_task_part4_o( Task, _ ) ). % blocked
 
 
 %%%%%%%%%%%%%%%%%%
@@ -145,26 +147,26 @@ solve_task_bt(Task,Current,D,RR,Cost,NewPos) :-
 
 
 %%%% Agenda based A star %%%%%%%%%%%%%%%%%%%%%
-solve_task_Astar(Task, [Current|_], RPath, Cost, NewPos, _):-
-  achieved_Astar(Task,Current,RPath,Cost,NewPos).
+solve_task_A_Star(Task, [Current|_], RPath, Cost, NewPos, _):-
+  achieved_A_Star(Task,Current,RPath,Cost,NewPos).
 
-solve_task_Astar(Task,[Current|Agenda],RR,Cost,NewPos,Closest) :-
+solve_task_A_Star(Task,[Current|Agenda],RR,Cost,NewPos,Closest) :-
   Current = [c(_, G,P)|RPath], G1 is G + 1,
   % add children to the agenda
   (setof([c(F1,G1,Pos1),Pos1|RPath],
-   search_Astar(P,Pos1,F1,G1,Closest), Children) % search adjacent
+   search_A_Star(P,Pos1,F1,G1,Closest), Children) % search adjacent
   -> merge(Agenda, Children, NewAgenda);NewAgenda = Agenda),
   exclude( memberchk(Closest), NewAgenda, FinalAgenda), % filter
-  solve_task_Astar(Task, FinalAgenda, RR, Cost, NewPos, [P | Closest]).
+  solve_task_A_Star(Task, FinalAgenda, RR, Cost, NewPos, [P | Closest]).
 
 
-achieved_Astar(go(Exit),Current,RPath,Cost,NewPos) :-
+achieved_A_Star(go(Exit),Current,RPath,Cost,NewPos) :-
   Current = [c(_,Cost,NewPos)|RPath],
   ( Exit=none -> true
   ; otherwise -> memberchk(Exit, RPath)
   ).
 
-achieved_Astar(find(O),Current,RPath,Cost,NewPos) :-
+achieved_A_Star(find(O),Current,RPath,Cost,NewPos) :-
   Current = [c(_,Cost,NewPos)|RPath],
   ( O=none    -> true
   ; otherwise -> memberchk(Last, RPath),
@@ -178,7 +180,7 @@ manhattan_distance(Pos, Goal, Distance):-
   Distance is abs(X1-X2) + abs(Y1-Y2).
 
 
-search_Astar(P,N,F1,G1,Closest):-
+search_A_Star(P,N,F1,G1,Closest):-
   map_adjacent(P,N,empty), \+ memberchk(N, Closest),
   nb_getval(flag, Flag),
   ( Flag = 1 -> b_getval( destination, go( Goal ) ),
